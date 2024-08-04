@@ -1,4 +1,4 @@
-🦄 Uploading a video
+🦄 Uploading video
 ==============
 
 ## Upload chunks
