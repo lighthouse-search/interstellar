@@ -1,6 +1,11 @@
 🦄 Uploading video
 ==============
 
+## Pipeline:
+- #1 (optional): In your API, you can make an endpoint that generates a video-id and locks it to the authenticated user, before sending it to Interstellar. 
+- #2 [Upload-chunks](https://github.com/oracularhades/interstellar/blob/main/docs/upload-a-video/index.md#upload-chunks) - Send relevant data in this endpoint.
+- #3 [Chunk-authentication](https://github.com/oracularhades/interstellar/blob/main/docs/upload-a-video/index.md#external-api-chunk-authentication) - (If you're using authentication on your Interstellar instances Interstellar will use this endpoint to communicate with your API internally and authenticate an incoming chunk.
+
 ## Upload chunks
 
 ```POST /interstellar/v1/upload-chunk```
@@ -9,7 +14,7 @@ Body (JSON):
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------|----------|
 | video_id      | The id of your video, this will be sent to the specified external api/auth service. This is required so chunks can easily be tracked between implementations and external APIs.                                                                                                                                                                                                                                                                                                                               | false    |
 | chunk         | (Number) sequence for chunk. For example, if you were uploading your first chunk of data, you'd label it 0. Obviously, chunks of video must remain in order, this number allows a video to be reconstructed properly later.                      | false    |
-| authorization | A string (passing a JWT is recommended) to authenticate with your external api/auth service.                                      | false    |
+| authorization | A string (passing a JWT is recommended) to authenticate with your external api/auth service. This will be sent in [chunk-authentication](https://github.com/oracularhades/interstellar/blob/main/docs/upload-a-video/index.md#external-api-chunk-authentication)                                                 | false    |
 | file_type      | Interstellar server will store uploaded chunks in the specified file-type on disk, it must be a valid video format.               | false    |
 
 Some notes:
