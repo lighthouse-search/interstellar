@@ -1,8 +1,10 @@
-🦄 Uploading video
+🦄 Uploading video (with custom APIs)
 ==============
 
+Description: Create a video ID within your existing API, upload chunks to Insterstellar, use your existing API to authenticate those chunks.
+
 ## Pipeline:
-- #1 (optional): In your API, you can make an endpoint (e.g ``/video/create``) that generates a video-id and locks it to the authenticated user, before sending the video-id to Interstellar. This isn't required, but may make tracking upload state much easier for some implementations.
+- #1: In your API, create an endpoint (e.g ``/video/create``). The user's client should call this endpoint, report the size of their video, and return a video_id. If using authentication (**strongly recommended**), you should authenticate the user and lock the video upload to that user. This endpoint is relevant to #3 ([Chunk-authentication](https://github.com/oracularhades/interstellar/blob/main/docs/upload-a-video/index.md#external-api-chunk-authentication))
 - #2 [Upload-chunks](https://github.com/oracularhades/interstellar/blob/main/docs/upload-a-video/index.md#upload-chunks) - Send relevant data in this endpoint.
 - #3 [Chunk-authentication](https://github.com/oracularhades/interstellar/blob/main/docs/upload-a-video/index.md#external-api-chunk-authentication) - (If you're using authentication on your Interstellar instances Interstellar will use this endpoint to communicate with your API internally and authenticate an incoming chunk.
 
