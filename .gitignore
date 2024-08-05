@@ -1,2 +1,4 @@
 /server/c-sharp/bin
 /server/c-sharp/obj
+
+.DS_Store
