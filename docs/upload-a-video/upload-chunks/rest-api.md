@@ -10,5 +10,3 @@ Body (JSON):
 
 Some notes:
 - When uploading, it doesn't matter how much data you send. Interstellar will mark how much data you've uploaded (either by asking the specific external API to do so, or storing that data itself, based on configuration) and reject further data after the expected size threshold is reached. You can send ``2 bytes`` in one request, ``3 megabytes`` the next, and Interstellar will adopt accordingly. This is why you aren't required to specify chunk size in an upload. Interstellar is designed this way so developers can seemlessly adjust the upload speed based on the user's connection.
-
-- 
