@@ -14,24 +14,24 @@ namespace Interstellar
     public static class File_operations
     {
         // Process all files in the directory passed in, recurse on any directories that are found, and process the files they contain.
-        public static void ProcessDirectory(string targetDirectory, List<string> list, string videoid)
+        public static void ProcessDirectory(string targetDirectory, List<string> list, string video_id)
         {
             // Process the list of files found in the directory.
             string [] fileEntries = Directory.GetFiles(targetDirectory);
             foreach(string fileName in fileEntries)
-                ProcessFile(fileName, list, videoid);
+                ProcessFile(fileName, list, video_id);
 
             // Recurse into subdirectories of this directory.
             string [] subdirectoryEntries = Directory.GetDirectories(targetDirectory);
             foreach(string subdirectory in subdirectoryEntries)
-                ProcessDirectory(subdirectory, list, videoid);
+                ProcessDirectory(subdirectory, list, video_id);
         }
 
         // Insert logic for processing found files here.
-        public static string ProcessFile(string path, List<string> list, string videoid)
+        public static string ProcessFile(string path, List<string> list, string video_id)
         {
             Console.WriteLine("Processed file '{0}'.", path);
-            list.Add(path.Replace($"/tmp/user_ingest_reencoded/{videoid}/", "").Replace(".tmp", ""));
+            list.Add(path.Replace($"/tmp/user_ingest_reencoded/{video_id}/", "").Replace(".tmp", ""));
             return path;
         }
 

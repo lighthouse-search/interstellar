@@ -1,9 +1,7 @@
 // Check HSTS.
 
 using Interstellar;
-using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 using System.Net;
 using StackExchange.Redis;
 using Newtonsoft.Json;
@@ -20,7 +18,21 @@ builder.WebHost.UseKestrel(options =>
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(60);
 });
 
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+    policy  =>
+    {
+        policy.WithOrigins("http://127.0.0.1:3001")
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
+
+app.UseCors(MyAllowSpecificOrigins);
 
 Redis.start();
 
@@ -51,14 +63,14 @@ app.MapGet("/error", async (HttpContext context) => {
     return;
 });
 
-app.MapPost("/upload-chunk", async(HttpContext context) => {
+app.MapPost("/upload-chunk", async (HttpContext context) => {
     try {
     Console.WriteLine("/upload-chunk");
 
-    Objects.UploadSignedObject UploadSignedObject = JsonConvert.DeserializeObject<Objects.UploadSignedObject>(context.Request.Form["signedObject"].ToString());
+    Objects.UploadSignedObject UploadSignedObject = JsonConvert.DeserializeObject<Objects.UploadSignedObject>(context.Request.Form["metadata"].ToString());
 
-    string videoID = Security.file_name_sanitize(UploadSignedObject.video_id);
-    if (String.IsNullOrWhiteSpace(videoID)) {
+    string video_id = Security.file_name_sanitize(UploadSignedObject.video_id);
+    if (String.IsNullOrWhiteSpace(video_id)) {
         context.Response.StatusCode = 400;
         await context.Response.WriteAsJsonAsync(Responses.error("body.video_id is null or whitespace."));
         return;
@@ -71,8 +83,8 @@ app.MapPost("/upload-chunk", async(HttpContext context) => {
         return;
     }
 
-    string filetype = Security.file_type_sanitize(UploadSignedObject.filetype.Replace("video/", ""));
-    if (String.IsNullOrWhiteSpace(filetype)) {
+    string file_type = Security.file_type_sanitize(UploadSignedObject.file_type.Replace("video/", ""));
+    if (String.IsNullOrWhiteSpace(file_type)) {
         context.Response.StatusCode = 400;
         await context.Response.WriteAsJsonAsync(Responses.error("body.file_type is null or whitespace."));
         return;
@@ -85,14 +97,14 @@ app.MapPost("/upload-chunk", async(HttpContext context) => {
     }
     long chunk = UploadSignedObject.chunk;
     
-    if (filetype == "x-matroska") {
-        filetype = "mkv";
+    if (file_type == "x-matroska") {
+        file_type = "mkv";
     }
 
-    if (filetype != "mp4" && filetype != "mkv" && filetype != "mov" && filetype != "flv" && filetype != "xflv" && filetype != "webm" && filetype != "avi" && filetype != "xmatroska" && filetype != "quicktime") {
-        // bad filetype - make response. Use this as a "glad we found that out before we uploaded it and ran it through FFMPEG". THIS IS JUST WHAT THE CLIENT IS CLAIMING THE FILETYPE IS. DO NOT TREAT THIS VIDEO AS ACTUALLY BEING SPECIFIED FILETYPE.
+    if (file_type != "mp4" && file_type != "mkv" && file_type != "mov" && file_type != "flv" && file_type != "xflv" && file_type != "webm" && file_type != "avi" && file_type != "xmatroska" && file_type != "quicktime") {
+        // bad file_type - make response. Use this as a "glad we found that out before we uploaded it and ran it through FFMPEG". THIS IS JUST WHAT THE CLIENT IS CLAIMING THE file_type IS. DO NOT TREAT THIS VIDEO AS ACTUALLY BEING SPECIFIED file_type.
         context.Response.StatusCode = 400;
-        await context.Response.WriteAsJsonAsync(Responses.error($"Unsupported filetype, gave .{filetype}, must be either mp4/mkv/mov/flv/webm/avi"));
+        await context.Response.WriteAsJsonAsync(Responses.error($"Unsupported file_type, gave .{file_type}, must be either mp4/mkv/mov/flv/webm/avi"));
         return;
     }
 
@@ -106,16 +118,16 @@ app.MapPost("/upload-chunk", async(HttpContext context) => {
         context.Response.StatusCode = 500;
         await context.Response.WriteAsJsonAsync(Responses.error("Uploaded Filesize cannot be 0."));
         return;
-    }
+    } // http://127.0.0.1:4455/api/native-v1
 
-    Console.WriteLine($"ADDRESS {Environment.GetEnvironmentVariable("apiaddress")}/ingest/chunk-authorization");
-    WebRequest request = WebRequest.Create($"{Environment.GetEnvironmentVariable("apiaddress")}/ingest/chunk-authorization");
+    Console.WriteLine($"ADDRESS {Environment.GetEnvironmentVariable("api_address")}/api/native-v1/video/chunk-authorisation");
+    WebRequest request = WebRequest.Create($"{Environment.GetEnvironmentVariable("api_address")}/video/chunk-authorisation");
     // Set the Method property of the request to POST.
     request.Method = "POST";
     request.ContentType = "application/json";
 
     var signed_data = new Objects.chunkAuthorizationBody {
-        videoid = videoID,
+        video_id = video_id,
         size = fileSize,
         chunk = chunk,
     };
@@ -155,26 +167,29 @@ app.MapPost("/upload-chunk", async(HttpContext context) => {
         return;
     }
 
-    if (chunkAuthorizationOutput.process_state != "ingest_handoff" && chunkAuthorizationOutput.process_state != "waiting") {
-        context.Response.StatusCode = 400;
-        await context.Response.WriteAsJsonAsync(Responses.error("Video state is not acceptable (this video might have already been uploaded?)"));
-        return;
-    }
+    // if (chunkAuthorizationOutput.process_state != "ingest_handoff" && chunkAuthorizationOutput.process_state != "waiting") {
+    //     context.Response.StatusCode = 400;
+    //     await context.Response.WriteAsJsonAsync(Responses.error("Video state is not acceptable (this video might have already been uploaded?)"));
+    //     return;
+    // }
 
-    System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{videoID}");
+    System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{video_id}");
 
-    // File.Delete($"/tmp/user_ingest_before_reencoding/{videoID}/{videoID}.{filetype}");
+    // File.Delete($"/tmp/user_ingest_before_reencoding/{video_id}/{video_id}.{file_type}");
 
-    // TODO: SANITIZE THAT VIDEOID HOLY SHIT BUD. DO NOT FORGET.
-    System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{videoID}/chunks");
+    // TODO: SANITIZE THAT video_id HOLY SHIT BUD. DO NOT FORGET.
+    System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{video_id}/chunks");
 
     var db = redis.GetDatabase();
-    string already_uploaded_raw = await db.StringGetAsync($"{Security.redis_key_sanitize(videoID)}_alreadyuploaded");
-    string max_size_raw = await db.StringGetAsync($"{Security.redis_key_sanitize(videoID)}_maxsize");
+    Console.WriteLine($"{Security.redis_key_sanitize(video_id)}_alreadyuploaded");
+    Console.WriteLine($"{Security.redis_key_sanitize(video_id)}_maxsize");
+    string already_uploaded_raw = await db.StringGetAsync($"{Security.redis_key_sanitize(video_id)}_alreadyuploaded");
+    string max_size_raw = await db.StringGetAsync($"{Security.redis_key_sanitize(video_id)}_maxsize");
 
-    if (already_uploaded_raw == null) {
+    // TODO: Remove the 1 == 1 placeholder.
+    if (already_uploaded_raw == null || max_size_raw == null || 1 == 1) {
         already_uploaded = chunkAuthorizationOutput.uploaded+fileSize;
-        max_size = chunkAuthorizationOutput.maxSize;
+        max_size = chunkAuthorizationOutput.max_size;
         Console.WriteLine("NOT EXISTS");
         Console.WriteLine(already_uploaded);
         Console.WriteLine(max_size);
@@ -194,14 +209,14 @@ app.MapPost("/upload-chunk", async(HttpContext context) => {
 
     if (already_uploaded > max_size) {
         context.Response.StatusCode = 400;
-        await context.Response.WriteAsJsonAsync(Responses.error($"Video size ({already_uploaded}) larger than expected size {max_size}"));
-        return;
+        await context.Response.WriteAsJsonAsync(Responses.error($"You cannot exceed authorized size of {max_size}"));
+        return; 
     }
 
-    db.StringSet($"{Security.redis_key_sanitize(videoID)}_alreadyuploaded", $"{already_uploaded}");
-    db.StringSet($"{Security.redis_key_sanitize(videoID)}_maxsize", $"{max_size}");
+    db.StringSet($"{Security.redis_key_sanitize(video_id)}_alreadyuploaded", $"{already_uploaded}");
+    db.StringSet($"{Security.redis_key_sanitize(video_id)}_maxsize", $"{max_size}");
 
-    await using (FileStream aFile = new FileStream($"/tmp/user_ingest_before_reencoding/{videoID}/chunks/{videoID}_{chunk}.ingest_chunk", FileMode.Append, FileAccess.Write))
+    await using (FileStream aFile = new FileStream($"/tmp/user_ingest_before_reencoding/{video_id}/chunks/{video_id}_{chunk}.ingest_chunk", FileMode.Append, FileAccess.Write))
     await context.Request.Form.Files[0].CopyToAsync(aFile);
 
     Console.WriteLine("OK WHAT");
@@ -211,6 +226,13 @@ app.MapPost("/upload-chunk", async(HttpContext context) => {
     try {
         if (already_uploaded == max_size) {
             // PROCESSING LOGIC
+            await Processing.video(video_id, file_type);
+        } else {
+            context.Response.StatusCode = 200;
+            await context.Response.WriteAsJsonAsync(new Objects.errorD 
+            {
+                type = "chunk_completed"
+            });
         }
     } catch (WebException ex)
     {
@@ -231,8 +253,8 @@ app.MapPost("/upload-chunk", async(HttpContext context) => {
             Console.WriteLine("Error occurred. Failed to get response from server.");
         }
 
-        File_operations.DeleteDirectory($"/tmp/user_ingest_before_reencoding/{videoID}");
-        File_operations.DeleteDirectory($"/tmp/user_ingest_reencoded/{videoID}");
+        File_operations.DeleteDirectory($"/tmp/user_ingest_before_reencoding/{video_id}");
+        File_operations.DeleteDirectory($"/tmp/user_ingest_reencoded/{video_id}");
         
         context.Response.StatusCode = 500;
         await context.Response.WriteAsJsonAsync(new Objects.errorD 

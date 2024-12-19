@@ -1,0 +1,40 @@
+[features]
+reencode = true
+
+[authorisation]
+chunk_authorisation = "http://127.0.0.1/chunk-authorisation"
+get_upload_urls = "http://127.0.0.1/get_upload_urls"
+
+[ffmpeg.commands]
+reencode = [
+    {
+        "program": "ffmpeg",
+        "commands": [
+            "-i /tmp/user_ingest_before_reencoding/", video_id, "/", video_id, ".", file_type, " -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/", video_id, "/", video_id, ".avi -y -preset medium",
+        ],
+    },
+    {
+        "program": "ffmpeg",
+        "commands": [
+            "-i /tmp/user_ingest_before_reencoding/", video_id, "/", video_id, ".avi",
+            "-vf \"scale=-2:144\" -c:v libx264 -crf 28 -profile:v baseline -b:v:0 250k",
+            "-vf \"scale=-2:240\" -c:v libx264 -crf 28 -profile:v baseline -b:v:1 500k",
+            "-vf \"scale=-2:360\" -c:v libx264 -crf 28 -profile:v main -b:v:2 750k",
+            "-vf \"scale=-2:480\" -c:v libx264 -crf 28 -profile:v main -b:v:3 1000k",
+            "-vf \"scale=-2:720\" -c:v libx264 -crf 28 -profile:v high -b:v:4 1500k",
+            "-vf \"scale=-2:1080\" -c:v libx264 -crf 28 -profile:v high -b:v:5 2500k",
+            "-f dash /tmp/user_ingest_reencoded/", video_id, "/video.mpd -y -preset medium"
+        ]
+    }
+]
+thumbnail = [
+    {
+        "program": "ffmpeg",
+        "commands":
+        [
+            "-i /tmp/user_ingest_before_reencoding/", video_id, "/", video_id, ".avi",
+            "-preset veryfast",
+            "-vf \"scale=-1:480\" /tmp/user_ingest_reencoded/", video_id, "/auto_generated_thumbnail.jpeg"
+        ]
+    }
+]

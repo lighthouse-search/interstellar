@@ -14,17 +14,16 @@ namespace Interstellar
             public string deviceid { get; set; }
             public string signature { get; set; }
             public string timestamp { get; set; }
-            public string filetype { get; set; }
+            public string file_type { get; set; }
         }
 
         // Internal objects.
         public class UploadSignedObject {
             public string video_id { get; set; }
             public string deviceid { get; set; }
-            public string filetype { get; set; }
+            public string file_type { get; set; }
             public long chunk { get; set; } = -1;
             public string video_hash { get; set; }
-        }
         }
         public class chunkAuthorizationBody {
             public string signature { get; set; }
@@ -35,11 +34,11 @@ namespace Interstellar
             public string client_signature { get; set; }
             public long size { get; set; }
             public long chunk { get; set; }
-            public string videoid { get; set; }
+            public string video_id { get; set; }
             public string jwt { get; set; }
         }
         public class presignedUrlsBody {
-            public string videoid { get; set; }
+            public string video_id { get; set; }
             public UInt16[] signature { get; set; }
             public UInt16[] presigned_url_signature { get; set; }
             public string data { get; set; }
@@ -128,12 +127,11 @@ namespace Interstellar
             public string ENCODER { get; set; }
         }
         public class chunkAuthorization {
-            public bool ok { get; set; }
+            public string video_id { get; set; }
             public long uploaded { get; set; }
-            public long maxSize { get; set; }
+            public long max_size { get; set; }
             public bool error { get; set; }
             public string process_state { get; set; }
-            public string id { get; set; }
         }
         public class presignedUrlAuthorization {
             public bool ok { get; set; }
