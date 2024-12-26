@@ -11,5 +11,6 @@
     <PackageReference Include="jose-jwt" Version="4.1.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.90" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Tomlyn" Version="0.17.0" />
   </ItemGroup>
 </Project>

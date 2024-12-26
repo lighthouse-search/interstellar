@@ -6,18 +6,19 @@ using System.Diagnostics;
 using System.Text;
 using System.Net;
 using Newtonsoft.Json;
+using Interstellar;
+using Tomlyn;
+using Tomlyn.Model;
+using System.Reflection;
 
 namespace Interstellar
 {
     public class Processing
     {
-        public static async Task video(string video_id, string file_type) {
-            // context.Response.StatusCode = 200;
-            // await context.Response.WriteAsJsonAsync(new Objects.errorD 
-            // {
-            //     type = "processing"
-            // });
-            // await context.Response.CompleteAsync();
+        public static async Task video(HttpContext context, string video_id, string file_type) {
+            Objects.Config config = Config.Get("test");
+
+            // TODO: Need to check file-type is allowed by config. Either doing this in processing here or doing it each time a chunk is uploaded.
 
             Thread.Sleep(100); // sleep to cool down files, some processes sometimes hold onto them extra longer....for some reason. This was a bug that happened very rarely in dev, but definitely not something we want in prod. 100ms is nothing to help ensure this doesn't happen.
 
@@ -70,301 +71,350 @@ namespace Interstellar
             string line = initCheck.StandardOutput.ReadToEnd();
             Console.WriteLine(line);
 
-            Objects.ffprobevideoinfo processOutput = JsonConvert.DeserializeObject<Objects.ffprobevideoinfo>(line);
-            if (processOutput.streams == null) {
+            Objects.ffprobevideoinfo process_output = JsonConvert.DeserializeObject<Objects.ffprobevideoinfo>(line);
+            if (process_output.streams == null) {
                 throw new Exception("We couldn't identify critical metadata about your video (is your video corrupt?)");
             }
 
-            Objects.ffprobevideoinfostream streamData = null;
+            List<Objects.Config_video_limit_issues> limit_issues = new List<Objects.Config_video_limit_issues>();
 
-            if (processOutput.streams.Length > 10000) {
-                throw new Exception($"Too many streams ({processOutput.streams.Length})...how do you even have this many in a single video?");
-            }
-
-            bool alreadyFoundVideoStream = false;
-
-            foreach (var stream in processOutput.streams)
+            foreach (var stream_data in process_output.streams)
             {
-                // Check if the codec_type is "video"
-                if (stream.codec_type == "video")
+                if (stream_data.codec_type == "video")
                 {
-                    if (alreadyFoundVideoStream == true) {
-                        throw new Exception("Cannot have more than 1 video stream in uploaded file.");
+                    foreach (PropertyInfo property in stream_data.GetType().GetProperties())
+                    {
+                        if (config.mode.video_limits.min != null && config.mode.video_limits.min.stream != null) {
+                            // Check if values are too small.
+                            Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                                if (enforced_value is int enforcedFloat && client_value is int clientInt)
+                                {
+                                    if (clientInt != -1 == false && clientInt < enforcedFloat)
+                                    {
+                                        limit_issues.Add(new Objects.Config_video_limit_issues {
+                                            problem = "too_small",
+                                            prop = property.Name.ToLower(),
+                                            needs_to_be = enforcedFloat,
+                                            value_is = clientInt
+                                        });
+                                    }
+                                } else {
+                                    throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                                }
+                            }, property, JsonConvert.DeserializeObject<Objects.ffprobevideoinfostream>(JsonConvert.SerializeObject(config.mode.video_limits.min.stream)), stream_data);
+                        }
+
+                        if (config.mode.video_limits.max != null && config.mode.video_limits.max.stream != null) {
+                            // Check if values are too large.
+                            Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                                if (enforced_value is int enforcedFloat && client_value is int clientInt)
+                                {
+                                    if (clientInt != -1 && clientInt > enforcedFloat)
+                                    {
+                                        limit_issues.Add(new Objects.Config_video_limit_issues {
+                                            problem = "too_large",
+                                            prop = property.Name.ToLower(),
+                                            needs_to_be = enforcedFloat,
+                                            value_is = client_value
+                                        });
+                                    }
+                                } else {
+                                    throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                                }
+                            }, property, JsonConvert.DeserializeObject<Objects.ffprobevideoinfostream>(JsonConvert.SerializeObject(config.mode.video_limits.max.stream)), stream_data);
+                        }
+
+                        if (config.mode.video_limits.must != null && config.mode.video_limits.must.stream != null) {
+                            // must_be - Value must be inarray.
+                            Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                                if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                                {
+                                    if (enforced_array.Contains(client_string) == false) // Value is not on the allow-list.
+                                    {
+                                        limit_issues.Add(new Objects.Config_video_limit_issues {
+                                            problem = "invalid_value",
+                                            prop = property.Name.ToLower(),
+                                            needs_to_be = enforced_array,
+                                            value_is = client_string
+                                        });
+                                    }
+                                } else {
+                                    throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                                }
+                            }, property, JsonConvert.DeserializeObject<Objects.ffprobevideoinfostream>(JsonConvert.SerializeObject(config.mode.video_limits.must.stream)), stream_data);
+                        }
+
+                        if (config.mode.video_limits.must_not_be != null && config.mode.video_limits.must_not_be.stream != null) {
+                            // must_not_be - Value must not be in array.
+                            Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                                if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                                {
+                                    if (enforced_array.Contains(client_string) == true) // block-listed value was provided.
+                                    {
+                                        limit_issues.Add(new Objects.Config_video_limit_issues {
+                                            problem = "invalid_value",
+                                            prop = property.Name.ToLower(),
+                                            cannot_be = enforced_array,
+                                            value_is = client_string
+                                        });
+                                    }
+                                } else {
+                                    throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                                }
+                            }, property, JsonConvert.DeserializeObject<Objects.ffprobevideoinfostream>(JsonConvert.SerializeObject(config.mode.video_limits.must_not_be.stream)), stream_data);
+                        }
+
+                        if (config.mode.video_limits.includes != null && config.mode.video_limits.includes.stream != null) {
+                            // includes - Value must include string from array.
+                            Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                                if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                                {
+                                    if (Validation.array_includes(client_string, enforced_array) == false)
+                                    {
+                                        limit_issues.Add(new Objects.Config_video_limit_issues {
+                                            problem = "invalid_value",
+                                            prop = property.Name.ToLower(),
+                                            must_include = enforced_array,
+                                            value_is = client_string
+                                        });
+                                    }
+                                } else {
+                                    throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                                }
+                            }, property, JsonConvert.DeserializeObject<Objects.ffprobevideoinfostream>(JsonConvert.SerializeObject(config.mode.video_limits.includes.stream)), stream_data);
+                        }
+
+                        if (config.mode.video_limits.does_not_include != null && config.mode.video_limits.does_not_include.stream != null) {
+                            // does not include - Value does not include string from array.
+                            Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                                if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                                {
+                                    if (Validation.array_includes(client_string, enforced_array) == true)
+                                    {
+                                        limit_issues.Add(new Objects.Config_video_limit_issues {
+                                            problem = "invalid_value",
+                                            prop = property.Name.ToLower(),
+                                            cannot_be = enforced_array,
+                                            value_is = client_string
+                                        });
+                                    }
+                                } else {
+                                    throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                                }
+                            }, property, JsonConvert.DeserializeObject<Objects.ffprobevideoinfostream>(JsonConvert.SerializeObject(config.mode.video_limits.does_not_include.stream)), stream_data);
+                        }
                     }
-                    alreadyFoundVideoStream = true;
-                    // Found the first video stream
-                    Console.WriteLine("Found a video stream!");
-                    streamData = stream;
                 }
             }
 
-            if (streamData == null) {
-                throw new Exception("No stream was found in the provided video.");
-            }
-
-            Console.WriteLine("VID STREAM");
-            Console.WriteLine(streamData);
+            Objects.Config_mode_video_limits_min_max_format video_limits_min_max_format = JsonConvert.DeserializeObject<Objects.Config_mode_video_limits_min_max_format>(JsonConvert.SerializeObject(process_output.format));
             
-            if (streamData.width > 3840) {
-                // too much width (over 4k);
-                throw new Exception("Width cannot exceed more than 3840 pixels (maximum file resolution is 4k).");
-            }
-            if (streamData.height > 2160) {
-                // too much height (over 4k);
-                throw new Exception("Height cannot exceed more than 2160 pixels (maximum file resolution is 4k).");
-            }
-            if (streamData.width < 256) {
-                // too little (under 160p);
-                throw new Exception("Width cannot be less than 256 pixels (the minimum file resolution is 144p).");
-            }
-            if (streamData.height < 144) {
-                // too little (under 160p);
-                throw new Exception("Height cannot be less than 144 pixels (the minimum file resolution is 144p).");
+            foreach (PropertyInfo property in video_limits_min_max_format.GetType().GetProperties())
+            {
+                if (config.mode.video_limits.min != null && config.mode.video_limits.min.format != null) {
+                    // Check if values are too small.
+                    Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                        if (enforced_value is string enforcedString)
+                        {
+                            if (float.TryParse(enforcedString, out float parsedEnforcedFloat))
+                            {
+                                enforced_value = parsedEnforcedFloat;
+                            } else
+                            {
+                                throw new Exception("enforced_value is a string but cannot be parsed as a float.");
+                            }
+                        }
+                        if (client_value is string clientString)
+                        {
+                            if (float.TryParse(clientString, out float parsedClientFloat))
+                            {
+                                client_value = parsedClientFloat;
+                            }
+                            else
+                            {
+                                throw new Exception("client_value is a string but cannot be parsed as a float.");
+                            }
+                        }
+                        if ((enforced_value is float enforcedFloat || enforced_value is int enforcedInt) && (client_value is float clientFloat || client_value is int clientInt))
+                        {
+                            var clientV = client_value switch
+                            {
+                                float f => f,
+                                int i => i,
+                                _ => throw new InvalidOperationException("Unexpected type")
+                            };
+                            var enforcedV = enforced_value switch
+                            {
+                                float f => f,
+                                int i => i,
+                                _ => throw new InvalidOperationException("Unexpected type")
+                            };
+                            if (clientV != -1 && clientV < enforcedV)
+                            {
+                                limit_issues.Add(new Objects.Config_video_limit_issues {
+                                    problem = "too_small",
+                                    prop = property.Name.ToLower(),
+                                    needs_to_be = enforcedV,
+                                    value_is = clientV
+                                });
+                            }
+                        } else {
+                            throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                        }
+                    }, property, JsonConvert.DeserializeObject<Objects.Config_mode_video_limits_min_max_format>(JsonConvert.SerializeObject(config.mode.video_limits.min.format)), video_limits_min_max_format);
+                }
+
+                if (config.mode.video_limits.max != null && config.mode.video_limits.max.format != null) {
+                    // Check if values are too large.
+                    Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                        if (enforced_value is string enforcedString)
+                        {
+                            if (float.TryParse(enforcedString, out float parsedEnforcedFloat))
+                            {
+                                enforced_value = parsedEnforcedFloat;
+                            }
+                            else
+                            {
+                                throw new Exception("client_value is a string but cannot be parsed as a float.");
+                            }
+                        }
+                        if (client_value is string clientString)
+                        {
+                            if (float.TryParse(clientString, out float parsedClientFloat))
+                            {
+                                client_value = parsedClientFloat;
+                            }
+                            else
+                            {
+                                throw new Exception("client_value is a string but cannot be parsed as a float.");
+                            }
+                        }
+                        Console.WriteLine($"{property.Name}");
+                        if ((enforced_value is float enforcedFloat || enforced_value is int enforcedInt) && (client_value is float clientFloat || client_value is int clientInt))
+                        {
+                            var clientV = client_value switch
+                            {
+                                float f => f,
+                                int i => i,
+                                _ => throw new InvalidOperationException("Unexpected type")
+                            };
+                            var enforcedV = enforced_value switch
+                            {
+                                float f => f,
+                                int i => i,
+                                _ => throw new InvalidOperationException("Unexpected type")
+                            };
+                            Console.WriteLine($"clientV {property.Name} client: {clientV} enforced: {enforcedV}");
+                            if (clientV != -1 && clientV > enforcedV)
+                            {
+                                limit_issues.Add(new Objects.Config_video_limit_issues {
+                                    problem = "too_large",
+                                    prop = property.Name.ToLower(),
+                                    needs_to_be = enforcedV,
+                                    value_is = clientV
+                                });
+                            }
+                        } else {
+                            throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                        }
+                    }, property, JsonConvert.DeserializeObject<Objects.Config_mode_video_limits_min_max_format>(JsonConvert.SerializeObject(config.mode.video_limits.max.format)), video_limits_min_max_format);
+                }
+
+                if (config.mode.video_limits.must != null && config.mode.video_limits.must.format != null) {
+                    // must_be - Value must be inarray.
+                    Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                        if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                        {
+                            if (enforced_array.Contains(client_string) == false) // Value is not on the allow-list.
+                            {
+                                limit_issues.Add(new Objects.Config_video_limit_issues {
+                                    problem = "invalid_value",
+                                    prop = property.Name.ToLower(),
+                                    needs_to_be = enforced_array,
+                                    value_is = client_string
+                                });
+                            }
+                        } else {
+                            throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                        }
+                    }, property, JsonConvert.DeserializeObject<Objects.Config_mode_video_limits_min_max_format>(JsonConvert.SerializeObject(config.mode.video_limits.must.format)), video_limits_min_max_format);
+                }
+
+                if (config.mode.video_limits.must_not_be != null && config.mode.video_limits.must_not_be.format != null) {
+                    // must_not_be - Value must not be in array.
+                    Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                        if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                        {
+                            if (enforced_array.Contains(client_string) == true) // block-listed value was provided.
+                            {
+                                limit_issues.Add(new Objects.Config_video_limit_issues {
+                                    problem = "invalid_value",
+                                    prop = property.Name.ToLower(),
+                                    cannot_be = enforced_array,
+                                    value_is = client_string
+                                });
+                            }
+                        } else {
+                            throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                        }
+                    }, property, JsonConvert.DeserializeObject<Objects.Config_mode_video_limits_min_max_format>(JsonConvert.SerializeObject(config.mode.video_limits.must_not_be.format)), video_limits_min_max_format);
+                }
+
+                if (config.mode.video_limits.includes != null&& config.mode.video_limits.includes.format != null) {
+                    // includes - Value must include string from array.
+                    Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                        if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                        {
+                            if (Validation.array_includes(client_string, enforced_array) == false)
+                            {
+                                limit_issues.Add(new Objects.Config_video_limit_issues {
+                                    problem = "invalid_value",
+                                    prop = property.Name.ToLower(),
+                                    must_include = enforced_array,
+                                    value_is = client_string
+                                });
+                            }
+                        } else {
+                            throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                        }
+                    }, property, JsonConvert.DeserializeObject<Objects.Config_mode_video_limits_min_max_format>(JsonConvert.SerializeObject(config.mode.video_limits.includes.format)), video_limits_min_max_format);
+                }
+
+                if (config.mode.video_limits.does_not_include != null && config.mode.video_limits.does_not_include.format != null) {
+                    // does not include - Value does not include string from array.
+                    Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
+                        if (enforced_value is List<string> enforced_array && client_value is String client_string)
+                        {
+                            if (Validation.array_includes(client_string, enforced_array) == true)
+                            {
+                                limit_issues.Add(new Objects.Config_video_limit_issues {
+                                    problem = "invalid_value",
+                                    prop = property.Name.ToLower(),
+                                    cannot_be = enforced_array,
+                                    value_is = client_string
+                                });
+                            }
+                        } else {
+                            throw new Exception("enforced_value or client_value is not comparable (this is a wildly stupid error, probably not your fault, so create a bug report).");
+                        }
+                    }, property, JsonConvert.DeserializeObject<Objects.Config_mode_video_limits_min_max_format>(JsonConvert.SerializeObject(config.mode.video_limits.does_not_include.format)), video_limits_min_max_format);
+                }
             }
 
-            if (processOutput.format.probe_score < 98) {
-                // file is not trustworthy. Explain to user.
-                throw new Exception($"Hmm...that file doesn't look like a .{file_type} file, we can't ingest it for security reasons. Please ensure it is not corrupt.");
+            if (limit_issues.Count > 0) {
+                context.Response.StatusCode = 400;
+                await context.Response.WriteAsJsonAsync(Responses.error($"Your video doesn't meet the server's requirements.", limit_issues));
+                await context.Response.CompleteAsync();
+                return;
             }
 
-            string duration_input = processOutput.format.duration;
-            int index = duration_input.IndexOf(".");
-            if (index > 0)
-                duration_input = duration_input.Substring(0, index);
+            throw new Exception("catch");
             
-            long duration = Convert.ToInt64(duration_input);
-
-            Console.WriteLine("Duration");
-
-            // TODO: All of this should be configurable in Interstellar config, which cleaner code.
-
-            if (duration == 86400 && processOutput.format.duration.Contains(".")) {
-                // Video over 24 hours. Cannot continue.
-                throw new Exception("Your video is over 24 hours. Videos over 24 hours are not supported. Please adjust your video length.");
-            }
-
-            if (duration < 1) {
-                // Video over 24 hours. Cannot continue.
-                throw new Exception("Duration is under 1...what?");
-            }
-
-            if (duration > 86400) {
-                // Video over 24 hours. Cannot continue.
-                throw new Exception("Your video is over 24 hours. Videos over 24 hours are not supported. Please adjust your video length.");
-            }
-
-            if (Convert.ToInt64(processOutput.format.size) < 1000000) {
-                // TODO: Minimum size should be configurable in Intersteallar config, and this is a stupid restriction.
-                throw new Exception("Video cannot be under 1mb.");
-            }
-
-            if (Convert.ToInt64(processOutput.format.size) > 5000000000) {
-                // TODO: Maximum size should be configurable in Intersteallar config.
-                throw new Exception("Your video cannot be over 5GB, this is a temporary pre-beta condition.");
-            }
-
-            // if (Convert.ToInt64(processOutput.format.size) > 42949672960) {
-            //     context.Response.StatusCode = 400;
-            //     await context.Response.WriteAsJsonAsync(new Objects.errorD 
-            //     {
-            //         error = true,
-            //         message = "Your video is over 40GB."
-            //     });
-            //     return;
-            // }
-            if (Convert.ToInt64(processOutput.format.bit_rate) > 600000000) {
-                // TODO: This should be configurable in Interstellar config.
-                throw new Exception("Bitrate cannot be over 600000000 bytes.");
-            }
-
-            Thread.Sleep(400);
-
-            // TODO: SANITIZE THAT video_id AGAIN BUD.
-            Process reencode = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = $"-i /tmp/user_ingest_before_reencoding/{video_id}/{video_id}.{file_type} -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/{video_id}/{video_id}.avi -y -preset medium",
-                    CreateNoWindow = true,
-                },
-                EnableRaisingEvents = true
-            };
-
-            reencode.OutputDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.WriteLine(e.Data);
-                }
-            };
-
-            reencode.ErrorDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.WriteLine(e.Data);
-                }
-            };
-
-            reencode.Start();
-            reencode.WaitForExit();
-
-            Thread.Sleep(400);
-
             System.IO.Directory.CreateDirectory($"/tmp/user_ingest_reencoded/{video_id}");
 
-            Process reencodeToMpd = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = $"-i /tmp/user_ingest_before_reencoding/{video_id}/{video_id}.avi " +
-                                "-vf \"scale=-2:144\" -c:v libx264 -crf 28 -profile:v baseline -b:v:0 250k " +
-                                "-vf \"scale=-2:240\" -c:v libx264 -crf 28 -profile:v baseline -b:v:1 500k " +
-                                "-vf \"scale=-2:360\" -c:v libx264 -crf 28 -profile:v main -b:v:2 750k " +
-                                "-vf \"scale=-2:480\" -c:v libx264 -crf 28 -profile:v main -b:v:3 1000k " +
-                                "-vf \"scale=-2:720\" -c:v libx264 -crf 28 -profile:v high -b:v:4 1500k " +
-                                "-vf \"scale=-2:1080\" -c:v libx264 -crf 28 -profile:v high -b:v:5 2500k " +
-                                $"-f dash /tmp/user_ingest_reencoded/{video_id}/video.mpd -y -preset medium",
-                    CreateNoWindow = true,
-                },
-                EnableRaisingEvents = true
-            };
-
-            
-            reencodeToMpd.OutputDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.WriteLine(e.Data);
-                }
-            };
-
-            reencodeToMpd.ErrorDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.WriteLine(e.Data);
-                }
-            };
-
-            reencodeToMpd.Start();
-            reencodeToMpd.WaitForExit();
-
-            // Console.WriteLine("ANY MESSAGE? - SECOND CMD");
-            // Console.WriteLine(reencodeToMpd.StandardOutput.ReadToEnd());
-            // Console.WriteLine("ERROR - SECOND CMD:");
-            // Console.WriteLine(reencodeToMpd.StandardError.ReadToEnd());
-            Console.WriteLine("EXIT CODE - SECOND CMD!");
-            Console.WriteLine(reencodeToMpd.ExitCode);
-
+            await Processes.loop(config.mode.ffmpeg.commands.reencode, video_id, file_type);
             Task.Delay(400);
-
-            // ffmpeg -i input.mp4 -vf "select='not(mod(t,5))',setpts=N/FRAME_RATE/TB" output_%04d.jpg
-
-            // string[] resolutionList = new string [] {};
-            // var preResolutionList = resolutionList.ToList();
-
-            // if (processOutput.streams[0].width > 192 && processOutput.streams[0].height > 144) {
-            //     preResolutionList.Add("192:144");
-            // }
-
-            // if (processOutput.streams[0].width > 640 && processOutput.streams[0].height > 480) {
-            //     preResolutionList.Add("640:480");
-            // }
-
-            // if (processOutput.streams[0].width > 1200 && processOutput.streams[0].height > 720) {
-            //     preResolutionList.Add("1200:720");
-            // }
-
-            // if (processOutput.streams[0].width > 1920 && processOutput.streams[0].height > 1080) {
-            //     preResolutionList.Add("1920:1080");
-            // }
-
-            // if (processOutput.streams[0].width > 3840 && processOutput.streams[0].height > 2160) {
-            //     preResolutionList.Add("3840:2160");
-            // }
-            // resolutionList = preResolutionList.ToArray();
-
-            // for (int i = 0; i < resolutionList.Length; i++)
-            // {
-
-            System.IO.Directory.CreateDirectory($"/tmp/user_ingest_reencoded/{video_id}/thumbnails");
-
-            Process generateThumbnails = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ffmpeg",
-                    Arguments = $"-i /tmp/user_ingest_before_reencoding/{video_id}/{video_id}.avi -preset veryfast -vf \"scale=-1:480\" /tmp/user_ingest_reencoded/{video_id}/auto_generated_thumbnail.jpeg",
-                    // UseShellExecute = false,
-                    // RedirectStandardOutput = true,                    
-                    CreateNoWindow = true,
-                    // RedirectStandardError = true
-                },
-                // EnableRaisingEvents = true
-            };
-
-            generateThumbnails.Start();
-            generateThumbnails.WaitForExit();
-
-            string directory = $"/tmp/user_ingest_reencoded/{video_id}/thumbnails/";
-            List<string> imageUrls = new List<string>();
-
-            string[] imagePreviews = Directory.GetFiles(directory, "*.jpeg");
-
-            Console.WriteLine("IMAGE PREVIEWS!");
-            Console.WriteLine(imagePreviews.Length);
-
-            foreach (string image in imagePreviews)
-            {
-                // Read the image file
-                byte[] imageBytes = File.ReadAllBytes(image);
-                
-                // Convert the image bytes to base64 URL
-                string base64Url = Convert.ToBase64String(imageBytes);
-                
-                // Create the data URL
-                string dataUrl = $"data:image/jpeg;base64,{base64Url}";
-                
-                // Add the data URL to the array
-                imageUrls.Add(dataUrl);
-            }
-
-            // Convert the imageUrls list to JSON
-            string json = JsonConvert.SerializeObject(imageUrls, Formatting.Indented);
-
-            // Write the JSON to a file
-            File.WriteAllText($"/tmp/user_ingest_reencoded/{video_id}/thumbnails.json", json);
-
-            File_operations.DeleteDirectory($"/tmp/user_ingest_reencoded/{video_id}/thumbnails"); // Delet this so it doesn't contribute to S3 writes.
-
-            Console.WriteLine("JSON file created successfully!");
-
-            // Process getAudioFile = new Process
-            // {
-            //     StartInfo = new ProcessStartInfo
-            //     {
-            //         FileName = "ffmpeg",
-            //         Arguments = $"-i /tmp/user_ingest_before_reencoding/{video_id}/{video_id}.avi -max_alloc 600000000 -acodec copy /tmp/user_ingest_before_reencoding/{video_id}/{video_id}.aac",
-            //         // UseShellExecute = false,
-            //         RedirectStandardOutput = true,
-            //         CreateNoWindow = true,
-            //         RedirectStandardError = true
-            //     },
-            //     // EnableRaisingEvents = true
-            // };
-
-            // getAudioFile.Start();
-            // getAudioFile.WaitForExit();
-
-            // string subtitles = await Helper.GetWhisperSubtitles($"/tmp/user_ingest_before_reencoding/{video_id}/{video_id}.aac", $"/tmp/user_ingest_before_reencoding/{video_id}/{video_id}.srt");
-
-            // Console.WriteLine("SUBTITLES!");
-            // Console.WriteLine(subtitles);
-
-            // File.WriteAllText($"/tmp/user_ingest_reencoded/{video_id}/english-us.srt", subtitles);
+            await Processes.loop(config.mode.ffmpeg.commands.thumbnail, video_id, file_type);
 
             File_operations.DeleteDirectory($"/tmp/user_ingest_before_reencoding/{video_id}/");    
 
@@ -392,8 +442,7 @@ namespace Interstellar
 
             filesList = preFilesList.ToArray();
 
-            Console.WriteLine($"{Environment.GetEnvironmentVariable("api_address")}/video/get-upload-urls");
-            WebRequest presignedUrl_request = WebRequest.Create($"{Environment.GetEnvironmentVariable("api_address")}/video/get-upload-urls");
+            WebRequest presignedUrl_request = WebRequest.Create(config.authorisation.get_upload_urls);
             // Set the Method property of the request to POST.
             presignedUrl_request.Method = "POST";
             presignedUrl_request.ContentType = "application/json";
