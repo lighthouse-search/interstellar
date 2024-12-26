@@ -60,7 +60,8 @@
                     "format": {
                         "size": 5000000000,
                         "bit_rate": 600000000,
-                        "nb_streams": 10000
+                        "nb_streams": 10000,
+                        "duration": 1
                     }
                 },
                 "must_be": {
