@@ -21,11 +21,12 @@ namespace Interstellar
 
         // Internal objects.
         public class UploadSignedObject {
-            public string video_id { get; set; }
+            public string asset_id { get; set; }
             public string deviceid { get; set; }
             public string file_type { get; set; }
             public long chunk { get; set; } = -1;
             public string video_hash { get; set; }
+            public string mode { get; set; }
         }
         public class chunkAuthorizationBody {
             public string signature { get; set; }
@@ -36,11 +37,12 @@ namespace Interstellar
             public string client_signature { get; set; }
             public long size { get; set; }
             public long chunk { get; set; }
-            public string video_id { get; set; }
+            public string asset_id { get; set; }
             public string jwt { get; set; }
+            public string mode { get; set; }
         }
         public class presignedUrlsBody {
-            public string video_id { get; set; }
+            public string asset_id { get; set; }
             public UInt16[] signature { get; set; }
             public UInt16[] presigned_url_signature { get; set; }
             public string data { get; set; }
@@ -128,7 +130,7 @@ namespace Interstellar
         //     public string ENCODER { get; set; }
         // }
         public class chunkAuthorization {
-            public string video_id { get; set; }
+            public string asset_id { get; set; }
             public long uploaded { get; set; }
             public long max_size { get; set; }
             public string process_state { get; set; }
@@ -160,16 +162,24 @@ namespace Interstellar
             public string type { get; set; }
             public string message { get; set; }
         }
+
         public class Process_item
         {
             public string program { get; set; }
             public string[] commands { get; set; }
+            public Process_item_handoff handoff { get; set; }
+        }
+        public class Process_item_handoff
+        {
+            public string endpoint { get; set; }
         }
 
         public class Config
         {
-            public Config_authorisation authorisation { get; set; }
             public Dictionary<String, Config_mode> modes { get; set; }
+            public Dictionary<String, Config_storage> storage { get; set; }
+            public Dictionary<String, Config_authentication> authentication { get; set; }
+            public Dictionary<String, Config_database> database { get; set; }
             public Config_request request { get; set; }
             public Config_message message { get; set; }
             public Config_mode mode { get; set; }
@@ -182,18 +192,59 @@ namespace Interstellar
             public Dictionary<string, string> file_alias { get; set; }
         }
 
-        public class Config_authorisation
+        public class Config_storage
         {
-            public string chunk_authorisation { get; set; }
+            public string type { get; set; }
+            public string host { get; set; }
+            public string access_key_env { get; set; }
+            public string secret_access_key_env { get; set; }
+            public string region { get; set; }
             public string get_upload_urls { get; set; }
+        }
+
+        public class Config_authentication
+        {
+            public string type { get; set; }
+            public string chunk_authorisation { get; set; }
+        }
+
+        public class Config_database
+        {
+            public string type { get; set; }
+            public string[] hosts { get; set; }
+            public string username_env { get; set; }
+            public string password_env { get; set; }
         }
 
         public class Config_mode
         {
             public string type { get; set; }
+            public bool use_default { get; set; } = true;
+            public Config_mode_storage_reference storage_reference { get; set; }
+            public Config_storage storage { get; set; }
+            public Config_authentication authentication { get; set; }
+            public Config_mode_authentication_reference authentication_reference { get; set; }
+            public Config_mode_database_reference database_reference { get; set; }
+            public Config_database database { get; set; }
             public Config_features features { get; set; }
             public Config_mode_video_limits video_limits { get; set; }
             public Ffmpeg ffmpeg { get; set; }
+        }
+
+        public class Config_mode_storage_reference
+        {
+            public string id { get; set; }
+            public string path { get; set; }
+        }
+
+        public class Config_mode_authentication_reference
+        {
+            public string id { get; set; }
+        }
+
+        public class Config_mode_database_reference
+        {
+            public string id { get; set; }
         }
 
         /////////////////////////////////////////////////////

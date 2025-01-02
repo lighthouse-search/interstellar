@@ -10,14 +10,29 @@ namespace Interstellar
 {
     public static class Handler
     {
-        public static void Fatal_error(HttpContext context, string video_id)
+        public static async Task setup(string asset_id)
         {
-            if (video_id != null) {
-                File_operations.DeleteDirectory($"/tmp/user_ingest_before_reencoding/{video_id}");
-                File_operations.DeleteDirectory($"/tmp/user_ingest_reencoded/{video_id}");
+            // Ensure the required directories exist.
+            System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{asset_id}");
+            System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{asset_id}/chunks");
+            System.IO.Directory.CreateDirectory($"/tmp/user_ingest_reencoded/{asset_id}");
+        }
+        public static async Task clean_up(HttpContext context, string asset_id)
+        {
+            Directory.Delete($"/tmp/user_ingest_before_reencoding/{asset_id}", true);
+            Directory.Delete($"/tmp/user_ingest_reencoded/{asset_id}", true);
+        }
+        public static async Task Fatal_error(HttpContext context, string asset_id)
+        {
+            if (asset_id != null) {
+                await clean_up(context, asset_id);
             }
 
-            context.Response.StatusCode = 500;
+            Console.WriteLine($"context.Response.HasStarted {context.Response.HasStarted}");
+            if (context != null && context.Response.HasStarted == false) {
+                await context.Response.CompleteAsync();
+                context.Response.StatusCode = 500;
+            }
             return;
         }
     }

@@ -16,7 +16,7 @@ namespace Interstellar
 {
     public class Config
     {
-        private static void UpdateConfig(object current_mode, object default_mode)
+        private static void Fallback_to_default_values(object current_mode, object default_mode)
         {
             foreach (PropertyInfo property in current_mode.GetType().GetProperties())
             {
@@ -29,7 +29,7 @@ namespace Interstellar
                 }
                 else if (property.PropertyType.IsClass && property.PropertyType != typeof(string))
                 {
-                    UpdateConfig(current_value, default_value);
+                    Fallback_to_default_values(current_value, default_value);
                 }
             }
         }
@@ -47,33 +47,30 @@ namespace Interstellar
             if (!config.modes.ContainsKey("default")) {
                 throw new Exception("Missing 'default configuration");
             }
-            if (!config.modes.ContainsKey(mode)) {
-                throw new Exception("Missing 'default configuration");
-            }
-            
             Objects.Config_mode default_mode = config.modes["default"];
-            Objects.Config_mode current_mode = config.modes[mode];
 
-            // foreach (PropertyInfo property in typeof(Objects.Config_mode).GetProperties())
-            // {
-            //     Console.WriteLine(property.Name);
-            //     if (property.GetValue(property.Name) == null);
-            // }
+            if (mode != null) {
+                if (!config.modes.ContainsKey(mode)) {
+                    throw new Exception("Missing 'default configuration");
+                }
+                Objects.Config_mode current_mode = config.modes[mode];
+                if (current_mode.use_default == true) {
+                    Config.Fallback_to_default_values(current_mode, default_mode);
+                }
+                config.mode = current_mode;
+            } else {
+                config.mode = default_mode;
+            }
 
-            // var mergedConfig = MergeConfigs(default_mode, current_mode);
-
-            // return MergeConfigs(config.modes["default"], config.modes[mode]);
-
-            // Objects.MyClass myObject = new Objects.MyClass
-            // {
-            //     Name = "Alice",
-            //     Age = 30,
-            //     Country = "Wonderland"
-            // };
-
-            Config.UpdateConfig(current_mode, default_mode);
-
-            config.mode = current_mode;
+            if (config.mode.storage_reference != null) {
+                config.mode.storage = config.storage[config.mode.storage_reference.id];
+            }
+            if (config.mode.authentication_reference != null) {
+                config.mode.authentication = config.authentication[config.mode.authentication_reference.id];
+            }
+            if (config.mode.database_reference != null) {
+                config.mode.database = config.database[config.mode.database_reference.id];
+            }
 
             Console.WriteLine("Parsed configuration: " + JsonConvert.SerializeObject(config));
             return config;
@@ -183,11 +180,8 @@ namespace Interstellar
                         _ => throw new InvalidOperationException("Unexpected type")
                     };
 
-                    Console.WriteLine($"{property.Name} {clientV} > {enforcedV}");
-
                     if (clientV != -1 && clientV > enforcedV)
                     {
-                        Console.WriteLine($"VIOLATION");
                         limit_issues.Add(new Objects.Config_video_limit_issues {
                             problem = "too_large",
                             prop = property.Name.ToLower(),

@@ -20,25 +20,20 @@ namespace Interstellar {
             HttpResponseMessage response = await client.PostAsync(url, content);
 
             string response_body = await response.Content.ReadAsStringAsync();
-            Console.WriteLine("RESPONSE FROM SERVER:", response_body);
             
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("Error: " + response.StatusCode);
-                throw new Exception(JsonConvert.SerializeObject(new Objects.HTTPS_Request_Response
-                {
-                    response_body = response_body,
-                    status_code = response.StatusCode,
-                    client = client
-                }));
-            }
-
-            return new Objects.HTTPS_Request_Response
+            Objects.HTTPS_Request_Response output = new Objects.HTTPS_Request_Response
             {
                 response_body = response_body,
                 status_code = response.StatusCode,
                 client = client
             };
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Error: " + response.StatusCode);
+                throw new Exception(JsonConvert.SerializeObject(output));
+            }
+            return output;
         }
     }
 }

@@ -10,14 +10,47 @@
             ]
         }
     },
-    "authorisation": {
-        "chunk_authorisation": "http://127.0.0.1:4455/api/native-v1/video/chunk-authorisation",
-        "get_upload_urls": "http://127.0.0.1:4455/api/native-v1/video/get-upload-urls"
+    "storage": {
+        "awesome_bucket": {
+            "type": "s3",
+            "host": "https://s3.example.com",
+            "access_key_env": "",
+            "secret_access_key_env": "",
+            "region": "auto"
+        },
+        "upload_server": {
+            "type": "remote_server",
+            "get_upload_urls": "http://127.0.0.1:4455/api/native-v1/video/get-upload-urls"
+        }
+    },
+    "authentication": {
+        "my_awesome_auth_server": {
+            "type": "remote_server",
+            "chunk_authorisation": "http://127.0.0.1:4455/api/native-v1/video/chunk-authorisation"
+        }
+    },
+    "database": {
+        "my_awesome_redis": {
+            "type": "redis",
+            "hosts": ["https://s3.example.com"],
+            "username_env": "",
+            "password_env": ""
+        }
     },
     "modes": {
         "test": {},
         "default": {
             "type": "video",
+            "storage_reference": {
+                "id": "awesome_bucket",
+                "path": "/%asset_id%"
+            },
+            "authentication_reference": {
+                "id": "my_awesome_auth_server"
+            },
+            "database_reference": {
+                "id": "my_awesome_redis"
+            },
             "features": {
                 "reencode": true,
                 "file_types": [
@@ -60,8 +93,7 @@
                     "format": {
                         "size": 5000000000,
                         "bit_rate": 600000000,
-                        "nb_streams": 10000,
-                        "duration": 1
+                        "nb_streams": 10000
                     }
                 },
                 "must_be": {
@@ -83,10 +115,10 @@
                         {
                             "program": "ffprobe",
                             "commands": [
-                                "-v quiet -print_format json -show_format -show_streams /tmp/user_ingest_before_reencoding/%video_id%/%video_id%.%file_type%"
+                                "-v quiet -print_format json -show_format -show_streams /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type%"
                             ],
                             "handoff": {
-                                "endpoint": "http://example.com/handoff"
+                                "endpoint": "https://oracularhades.com/handoff"
                             }
                         }
                     ],
@@ -94,16 +126,16 @@
                         {
                             "program": "ffmpeg",
                             "commands": [
-                                "-i /tmp/user_ingest_before_reencoding/%video_id%/%video_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%video_id%/%video_id%.avi -y -preset medium"
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium"
                             ],
                             "handoff": {
-                                "endpoint": "http://example.com/handoff"
+                                "endpoint": "https://oracularhades.com/handoff"
                             }
                         },
                         {
                             "program": "ffmpeg",
                             "commands": [
-                                "-i /tmp/user_ingest_before_reencoding/%video_id%/%video_id%.avi",
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
                                 "-map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0",
                                 "-vf \"scale=-2:144\" -c:v libx264 -crf 28 -profile:v baseline -b:v:0 250k",
                                 "-vf \"scale=-2:240\" -c:v libx264 -crf 28 -profile:v baseline -b:v:1 500k",
@@ -111,7 +143,7 @@
                                 "-vf \"scale=-2:480\" -c:v libx264 -crf 28 -profile:v main -b:v:3 1000k",
                                 "-vf \"scale=-2:720\" -c:v libx264 -crf 28 -profile:v high -b:v:4 1500k",
                                 "-vf \"scale=-2:1080\" -c:v libx264 -crf 28 -profile:v high -b:v:5 2500k",
-                                "-f dash /tmp/user_ingest_reencoded/%video_id%/video.mpd -y -preset medium"
+                                "-f dash /tmp/user_ingest_reencoded/%asset_id%/video.mpd -y -preset medium"
                             ]
                         }
                     ],
@@ -120,9 +152,11 @@
                             "program": "ffmpeg",
                             "commands":
                             [
-                                "-i /tmp/user_ingest_before_reencoding/%video_id%/%video_id%.avi",
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
                                 "-preset veryfast",
-                                "-vf \"scale=-1:480\" /tmp/user_ingest_reencoded/%video_id%/auto_generated_thumbnail.jpeg"
+                                "-vf \"scale=-1:480\"",
+                                "-frames:v 1",
+                                "/tmp/user_ingest_reencoded/%asset_id%/auto_generated_thumbnail.jpeg"
                             ]
                         }
                     ]

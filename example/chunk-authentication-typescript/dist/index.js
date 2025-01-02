@@ -11,7 +11,7 @@ app.use(express_1.default.json());
 // Basic route
 app.post('/internal/chunk-authorization', (req, res) => {
     const successful_authentication = {
-        "video_id": "",
+        "asset_id": "",
         "file_type": ["mp4"],
         "uploaded": 0,
         "max_size": 764829806

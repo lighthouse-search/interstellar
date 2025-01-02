@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.ObjectPool;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,17 +17,16 @@ var builder = WebApplication.CreateBuilder(args);
 // builder.Services.AddSignalR();
 builder.Services.AddCors();
 
-Objects.Config config = Config.Get("test");
-
-if (config == null)
+Objects.Config default_config = Config.Get(null);
+if (default_config == null)
 {
     throw new Exception("Config object is null");
 }
 
 builder.WebHost.UseKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = config.request.limit.max_request_body_size;
-    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(config.request.limit.keep_alive_timeout_from_minutes);
+    options.Limits.MaxRequestBodySize = default_config.request.limit.max_request_body_size;
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(default_config.request.limit.keep_alive_timeout_from_minutes);
 });
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
@@ -35,7 +35,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
     policy  =>
     {
-        policy.WithOrigins(config.request.cors.allowed_origins)
+        policy.WithOrigins(default_config.request.cors.allowed_origins)
         .AllowAnyHeader()
         .AllowAnyMethod();
     });
@@ -59,11 +59,6 @@ app.Use(async (context, next) =>
 
 Redis.start();
 
-ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(
-    new ConfigurationOptions{
-        EndPoints = { "127.0.0.1:6379" },    
-    });
-
 app.UseExceptionHandler("/Error");
 
 if (!app.Environment.IsDevelopment())
@@ -82,22 +77,30 @@ app.UseRouting();
 
 app.MapGet("/error", async (HttpContext context) => {
     context.Response.StatusCode = 500;
-    await context.Response.WriteAsJsonAsync(Responses.error(config.message.fatal_error));
+    await context.Response.WriteAsJsonAsync(Responses.error(default_config.message.fatal_error));
     return;
 });
 
 app.MapPost("/upload-chunk", async (HttpContext context) => {
-    string video_id = null;
+    string asset_id = null;
 try {
-    Objects.Config config = Config.Get("test");
     Console.WriteLine("/upload-chunk");
-
     Objects.UploadSignedObject UploadSignedObject = JsonConvert.DeserializeObject<Objects.UploadSignedObject>(context.Request.Form["metadata"].ToString());
 
-    video_id = Security.file_name_sanitize(UploadSignedObject.video_id);
-    if (String.IsNullOrWhiteSpace(video_id)) {
+    string mode = UploadSignedObject.mode;
+    Objects.Config config = Config.Get(mode);
+
+    ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(
+    new ConfigurationOptions{
+        EndPoints = { config.mode.database.hosts[0] },
+        User = config.mode.database.username_env,
+        Password = config.mode.database.password_env
+    });
+
+    asset_id = Security.file_name_sanitize(UploadSignedObject.asset_id);
+    if (String.IsNullOrWhiteSpace(asset_id)) {
         context.Response.StatusCode = 400;
-        await context.Response.WriteAsJsonAsync(Responses.error("body.video_id is null or whitespace."));
+        await context.Response.WriteAsJsonAsync(Responses.error("body.asset_id is null or whitespace."));
         await context.Response.CompleteAsync();
         return;
     }
@@ -119,7 +122,7 @@ try {
         return;
     }
 
-    // Chunk: A chunk allows the server to reconstruct the video bytes in the correct order during processing. A "chunk" is any video packet. The client being able to upload chunks without waiting for another chunk to upload is essential for upload multithreading. A client can upload chunk 1, then chunk 3, then chunk 2, then chunk 8 and the server will reconstruct the video in the correct order. This prevents the video from becoming corrupt.
+    // Chunk: A chunk allows the server to reconstruct the video bytes in the correct order during Post_processing. A "chunk" is any video packet. The client being able to upload chunks without waiting for another chunk to upload is essential for upload multithreading. A client can upload chunk 1, then chunk 3, then chunk 2, then chunk 8 and the server will reconstruct the video in the correct order. This prevents the video from becoming corrupt.
     long chunk = UploadSignedObject.chunk;
     if (chunk < 0) {
         context.Response.StatusCode = 400;
@@ -147,34 +150,38 @@ try {
 
     var form = await context.Request.ReadFormAsync();
     var file = form.Files["file"];
-    int fileSize = (int)file.Length;
-    if (fileSize == null || fileSize == 0) {
+    int file_size = (int)file.Length;
+    if (file_size == null || file_size == 0) {
         context.Response.StatusCode = 400;
         await context.Response.WriteAsJsonAsync(Responses.error("You cannot upload a file that is 0 bytes."));
         await context.Response.CompleteAsync();
         return;
     }
 
-    Objects.HTTPS_Request_Response chunk_authorisation_response = await Https.Request_POST(
-        config.authorisation.chunk_authorisation,
-        new Objects.chunkAuthorizationBody {
-            video_id = video_id,
-            size = fileSize,
-            chunk = chunk,
-        }
-    );
-    Objects.chunkAuthorization chunkAuthorizationOutput = JsonConvert.DeserializeObject<Objects.chunkAuthorization>(chunk_authorisation_response.response_body);
+    long already_uploaded = -1;
+    long max_size = -1;
 
-    // External server didn't like that.
-    if (chunkAuthorizationOutput.error == true) {
-        context.Response.StatusCode = 400;
-        await context.Response.WriteAsJsonAsync(Responses.error($"Error from server: {chunkAuthorizationOutput.message}"));
-        await context.Response.CompleteAsync();
-        return;
+    string storage_type = config.mode.storage.type.ToLower();
+    if (storage_type == "remote_server") {
+        Objects.chunkAuthorization chunk_authorisation = await Authentication.chunk_authorisation(config, mode, asset_id, file_size, chunk);
+
+        // External server didn't like that.
+        if (chunk_authorisation.error == true) {
+            context.Response.StatusCode = 400;
+            await context.Response.WriteAsJsonAsync(Responses.error($"Error from server: {chunk_authorisation.message}"));
+            await context.Response.CompleteAsync();
+            return;
+        }
+
+        already_uploaded = chunk_authorisation.uploaded;
+        max_size = chunk_authorisation.max_size;
+    } else {
+        throw new Exception("No valid storage type.");
     }
-    
-    long already_uploaded = chunkAuthorizationOutput.uploaded;
-    long max_size = chunkAuthorizationOutput.max_size;
+
+    if (already_uploaded == -1 || max_size == -1) {
+        throw new Exception("Already_uploaded or max_size wasn't set, something went wrong.");
+    }
 
     if (already_uploaded > max_size) {
         context.Response.StatusCode = 400;
@@ -184,29 +191,27 @@ try {
     }
 
     // Ensure the required directories exist.
-    System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{video_id}");
-    System.IO.Directory.CreateDirectory($"/tmp/user_ingest_before_reencoding/{video_id}/chunks");
+    await Handler.setup(asset_id);
 
     // Write incoming chunk to disk.
-    await using (FileStream aFile = new FileStream($"/tmp/user_ingest_before_reencoding/{video_id}/chunks/{video_id}_{chunk}.ingest_chunk", FileMode.Append, FileAccess.Write))
+    await using (FileStream aFile = new FileStream($"/tmp/user_ingest_before_reencoding/{asset_id}/chunks/{asset_id}_{chunk}.ingest_chunk", FileMode.Append, FileAccess.Write))
     await context.Request.Form.Files[0].CopyToAsync(aFile);
 
     Console.WriteLine("OK WHAT");
-    Console.WriteLine(already_uploaded+fileSize);
+    Console.WriteLine(already_uploaded+file_size);
     Console.WriteLine(max_size);
 
     // Now that we've written the incoming chunk to disk, we'll check if the video has been uploaded based on the allocated size.
-    if (already_uploaded+fileSize == max_size) {
-        // Video is fully uploaded and perfectly matches the allocated size. We'll begin video processing.
-        try {
-            await Processing.video(context,video_id, file_type);
-        } catch (Exception ex)
+    if (already_uploaded+file_size == max_size) {
+        // Video is fully uploaded and perfectly matches the allocated size. We'll begin video Post_processing.
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsJsonAsync(new Objects.errorD 
         {
-            Console.WriteLine("ERROR1!");
-            Console.WriteLine(ex);
-            Handler.Fatal_error(context, video_id);
-            return;
-        }
+            type = "processing"
+        });
+        await context.Response.CompleteAsync();
+
+        await Post_processing.initalise(context, config, asset_id, file_type);
     } else {
         context.Response.StatusCode = 200;
         await context.Response.WriteAsJsonAsync(new Objects.errorD 
@@ -219,7 +224,8 @@ try {
 } catch (WebException ex)
 {
     Console.WriteLine("ERROR2!", ex);
-    Handler.Fatal_error(context, video_id);
+    // context.Response.StatusCode = 500;
+    await Handler.Fatal_error(context, asset_id);
     return;
 }
 });

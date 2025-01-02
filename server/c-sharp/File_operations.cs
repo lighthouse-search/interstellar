@@ -14,73 +14,57 @@ namespace Interstellar
     public static class File_operations
     {
         // Process all files in the directory passed in, recurse on any directories that are found, and process the files they contain.
-        public static void ProcessDirectory(string targetDirectory, List<string> list, string video_id)
+        // Warning: I haven't fully tested 'recursive' here.
+        public static void ProcessDirectory(string targetDirectory, List<string> list, bool recursive, bool file_names)
         {
             // Process the list of files found in the directory.
             string [] fileEntries = Directory.GetFiles(targetDirectory);
             foreach(string fileName in fileEntries)
-                ProcessFile(fileName, list, video_id);
+                ProcessFile(fileName, list, file_names);
 
             // Recurse into subdirectories of this directory.
-            string [] subdirectoryEntries = Directory.GetDirectories(targetDirectory);
-            foreach(string subdirectory in subdirectoryEntries)
-                ProcessDirectory(subdirectory, list, video_id);
+            if (recursive == true) {
+                string [] subdirectoryEntries = Directory.GetDirectories(targetDirectory);
+                foreach(string subdirectory in subdirectoryEntries)
+                    ProcessDirectory(subdirectory, list, true, file_names); // 'recursive' is always true here, as the original param was recursive. This would only be false in the future if there was a limit on recursiveness, e.g. only going 1 directory deep.
+            }
         }
 
         // Insert logic for processing found files here.
-        public static string ProcessFile(string path, List<string> list, string video_id)
+        public static string ProcessFile(string path, List<string> list, bool file_names)
         {
-            Console.WriteLine("Processed file '{0}'.", path);
-            list.Add(path.Replace($"/tmp/user_ingest_reencoded/{video_id}/", "").Replace(".tmp", ""));
+            if (file_names == true) {
+                list.Add(Path.GetFileName(path));
+            } else {
+                list.Add(path);
+            }
             return path;
         }
 
-        public static T MergeObjects<T>(T target, T source)
+        public static string[] Get_files_in_directory(string[] base_paths, bool recursive, bool file_names)
         {
-            Type targetType = typeof(T);
-            PropertyInfo[] properties = targetType.GetProperties();
+            string[] files_list = new string [] {};
+            var pre_files_list = files_list.ToList();
 
-            foreach (PropertyInfo property in properties)
+            foreach(string path in base_paths)
             {
-                object sourceValue = property.GetValue(source, null);
-                if (sourceValue != null)
+                if (File.Exists(path))
                 {
-                    property.SetValue(target, sourceValue, null);
+                    // This path is a file
+                    File_operations.ProcessFile(path, pre_files_list, file_names);
+                }
+                else if (Directory.Exists(path))
+                {
+                    // This path is a directory
+                    File_operations.ProcessDirectory(path, pre_files_list, recursive, file_names);
+                }
+                else
+                {
+                    Console.WriteLine("{0} is not a valid file or directory.", path);
                 }
             }
 
-            return target;
-        }
-
-        public static void CopyValues<T> (T target, T source)
-        {
-            Type t = typeof (T);
-            var properties = t.GetProperties ().Where (prop => prop.CanRead && prop.CanWrite);
-            foreach (var prop in properties)
-            {
-                var value = prop.GetValue (source, null);
-                if (value != null)
-                    prop.SetValue (target, value, null);
-            }
-        }
-
-        public static bool DeleteDirectory(string dirPath) {
-            bool deleted = false;
-            while (!deleted)
-            {
-                try
-                {
-                    Directory.Delete(dirPath, true);
-                    deleted = true;
-                }
-                catch (IOException)
-                {
-                    // Wait for 100 milliseconds and try again
-                    Thread.Sleep(100);
-                }
-            }
-
-            return true;
+            return files_list;
         }
 
         public static async Task<string> GetWhisperSubtitles(string AudioFilePath, string SrtFilePath)
@@ -122,6 +106,5 @@ namespace Interstellar
                 return null;
             }
         }
-
     }
 }
