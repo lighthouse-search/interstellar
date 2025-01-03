@@ -15,4 +15,4 @@ build:
   script:
     - docker buildx create --use
     - docker buildx inspect --bootstrap
-    - docker buildx build --file ./docker/Dockerfile --push --tag $DOCKER_IMAGE_NAME ./server/c-sharp
+    - docker buildx build --file ./server/c-sharp/docker/Dockerfile --push --tag $DOCKER_IMAGE_NAME ./server/c-sharp
