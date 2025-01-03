@@ -48,7 +48,7 @@ namespace Interstellar
             public string data { get; set; }
             public string presigned_url_data { get; set; }
             public string ingestid { get; set; }
-            public string[] files { get; set; }
+            public string[] object_keys { get; set; }
             public string jwt { get; set; }
             public string client_deviceid { get; set; }
         }
@@ -140,11 +140,7 @@ namespace Interstellar
         public class presignedUrlAuthorization {
             public bool ok { get; set; }
             public bool error { get; set; }
-            public Objects.presignedUrlFilesArray[] files { get; set; }
-        }
-        public class presignedUrlFilesArray {
-            public string file { get; set; }
-            public string url { get; set; }
+            public Objects.ObjectKey_URL[] files { get; set; }
         }
 
         // Response objects.
@@ -196,10 +192,18 @@ namespace Interstellar
         {
             public string type { get; set; }
             public string host { get; set; }
+            public string bucket_name { get; set; }
             public string access_key_env { get; set; }
             public string secret_access_key_env { get; set; }
             public string region { get; set; }
             public string get_upload_urls { get; set; }
+            public Config_storage_multithreaded_transfer multithreaded_transfer { get; set; } = new Config_storage_multithreaded_transfer {};
+        }
+
+        public class Config_storage_multithreaded_transfer
+        {
+            public bool enabled { get; set; } = true;
+            public int thread_limit { get; set; } = 4;
         }
 
         public class Config_authentication
@@ -228,7 +232,8 @@ namespace Interstellar
             public Config_database database { get; set; }
             public Config_features features { get; set; }
             public Config_mode_video_limits video_limits { get; set; }
-            public Ffmpeg ffmpeg { get; set; }
+            public Config_mode_FFmpeg ffmpeg { get; set; }
+            public bool invisible { get; set; }
         }
 
         public class Config_mode_storage_reference
@@ -411,15 +416,15 @@ namespace Interstellar
             public string[] allowed_origins { get; set; }
         }
 
-        public class Ffmpeg
+        public class Config_mode_FFmpeg
         {
-            public Commands commands { get; set; }
+            public Config_mode_FFmpeg_Commands commands { get; set; }
         }
 
-        public class Commands
+        public class Config_mode_FFmpeg_Commands
         {
+            public Process_item[] validation { get; set; }
             public Process_item[] reencode { get; set; }
-            public Process_item[] thumbnail { get; set; }
         }
 
         public class Config_message
@@ -442,6 +447,32 @@ namespace Interstellar
             public string response_body { get; set; }
             public HttpStatusCode status_code { get; set; }
             public HttpClient client { get; set; }
+        }
+
+        public class ObjectKey_URL {
+            public string object_key { get; set; }
+            public string url { get; set; }
+        }
+
+        public class File_path_URL {
+            public string file_path { get; set; }
+            public string url { get; set; }
+        }
+
+        public class files_in_directory {
+            public string full_path { get; set; }
+            public string file_name { get; set; }
+            public string cropped_path { get; set; }
+        }
+
+        public class endpoint_generic_data {
+            public bool ok { get; set; }
+            public object data { get; set; }
+        }
+
+        public class Authentication_initalise {
+            public long already_uplodaded { get; set; } = -1;
+            public long max_size { get; set; } = -1;
         }
     }
 }

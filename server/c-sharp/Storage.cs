@@ -17,15 +17,35 @@ namespace Interstellar
     {
         public static async Task initalise_move(HttpContext context, Objects.Config config, string asset_id, string file_type, string base_path) {
             string storage_type = config.mode.storage.type.ToLower();
+
+            List<Objects.files_in_directory> files_in_directory = File_operations.Get_files_in_directory(new string[] { base_path }, true);
+            List<String> files_in_directory_full_paths = files_in_directory.Select(file => file.full_path).ToList();
+            List<String> files_in_directory_cropped_paths = files_in_directory.Select(file => file.cropped_path).ToList();
+
+            Objects.ObjectKey_URL[] urls;
             if (storage_type == "remote_server") {
-                Objects.presignedUrlAuthorization upload_urls = await Remote_server.Get_upload_urls(config, base_path, asset_id);
+                Objects.ObjectKey_URL[] upload_urls = await Remote_server.Get_upload_urls(config, files_in_directory_cropped_paths.ToArray(), asset_id);
+                urls = upload_urls;
             } else if (storage_type == "s3") {
-                Objects.presignedUrlAuthorization upload_urls = await S3.Generate_Presigned_URL(S3.Get_S3_client(), config.mode.storage.bucket_name, base_path, asset_id);
+                Objects.ObjectKey_URL[] presigned_urls = S3.Generate_Presigned_URL(config, asset_id, S3.Get_S3_client(config), config.mode.storage.bucket_name, files_in_directory_cropped_paths.ToArray(), 43200).ToArray();
+                urls = presigned_urls;
             } else {
                 throw new Exception($"'{storage_type}' is invalid.");
             }
 
-            // await Upload_directory(config, new string[] { $"/tmp/user_ingest_reencoded/{asset_id}" }, asset_id);
+            var relevant_files = from file in files_in_directory
+                        join presigned_url in urls on file.cropped_path equals presigned_url.object_key
+                        select new { file, presigned_url };
+
+            List<Objects.File_path_URL> files_and_urls = new List<Objects.File_path_URL>();
+            foreach (var item in relevant_files) {
+                files_and_urls.Add(new Objects.File_path_URL {
+                    url = item.presigned_url.url,
+                    file_path = item.file.full_path
+                });
+            }
+
+            await Https.Upload_directory(config, files_and_urls);
         }
     }
 }

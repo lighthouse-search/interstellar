@@ -1,0 +1,18 @@
+stages:
+  - build
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:latest
+
+build:
+  image: docker:cli
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker buildx create --use
+    - docker buildx inspect --bootstrap
+    - docker buildx build --file ./server/Dockerfile --push --tag $DOCKER_IMAGE_NAME ./server

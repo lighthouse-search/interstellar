@@ -3,13 +3,9 @@
 using Interstellar;
 using System.Text;
 using System.Net;
-using StackExchange.Redis;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
-using System.Net.Http;
-using System.Net.Http.Headers;
-using Microsoft.Extensions.ObjectPool;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +45,7 @@ app.Use(async (context, next) =>
 {
     context.Response.OnStarting(() =>
     {
+        // TODO: Add URL here.
         context.Response.Headers["interstellar"] = "https://example.com";
         context.Response.Headers["server"] = "";
         return Task.CompletedTask;
@@ -57,7 +54,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-Redis.start();
+// Redis.start();
 
 app.UseExceptionHandler("/Error");
 
@@ -68,7 +65,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 app.UseStaticFiles(); // TODO: should this be disabled?
 
 app.UseCors();
@@ -81,6 +78,28 @@ app.MapGet("/error", async (HttpContext context) => {
     return;
 });
 
+app.MapGet("/mode/list", async (HttpContext context) => {
+    Objects.Config config = Config.Get(null);
+    Dictionary<string, Objects.Config_mode>.KeyCollection keys = config.modes.Keys;
+
+    List<string> public_modes = new List<string>();
+    // Iterate through the keys
+    foreach (string key in keys)
+    {
+        Objects.Config_mode mode = config.modes[key];
+        if (mode.invisible != true) {
+            public_modes.Add(key);
+        }
+    }
+
+    context.Response.StatusCode = 200;
+    await context.Response.WriteAsJsonAsync(new Objects.endpoint_generic_data {
+        ok = true,
+        data = public_modes
+    });
+    return;
+});
+
 app.MapPost("/upload-chunk", async (HttpContext context) => {
     string asset_id = null;
 try {
@@ -90,12 +109,17 @@ try {
     string mode = UploadSignedObject.mode;
     Objects.Config config = Config.Get(mode);
 
-    ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(
-    new ConfigurationOptions{
-        EndPoints = { config.mode.database.hosts[0] },
-        User = config.mode.database.username_env,
-        Password = config.mode.database.password_env
-    });
+    ConnectionMultiplexer conn_redis = null;
+    IDatabase redis = null;
+    if ((config.mode.database != null && config.mode.database.type == "redis") || (config.mode.authentication != null && config.mode.authentication.type == "redis")) {
+        conn_redis = ConnectionMultiplexer.Connect(
+        new ConfigurationOptions{
+            EndPoints = { config.mode.database.hosts[0] },
+            User = Environment.GetEnvironmentVariable(config.mode.database.username_env),
+            Password = Environment.GetEnvironmentVariable(config.mode.database.password_env)
+        });
+        redis = conn_redis.GetDatabase();
+    }
 
     asset_id = Security.file_name_sanitize(UploadSignedObject.asset_id);
     if (String.IsNullOrWhiteSpace(asset_id)) {
@@ -158,31 +182,13 @@ try {
         return;
     }
 
-    long already_uploaded = -1;
-    long max_size = -1;
-
-    string storage_type = config.mode.storage.type.ToLower();
-    if (storage_type == "remote_server") {
-        Objects.chunkAuthorization chunk_authorisation = await Authentication.chunk_authorisation(config, mode, asset_id, file_size, chunk);
-
-        // External server didn't like that.
-        if (chunk_authorisation.error == true) {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsJsonAsync(Responses.error($"Error from server: {chunk_authorisation.message}"));
-            await context.Response.CompleteAsync();
-            return;
-        }
-
-        already_uploaded = chunk_authorisation.uploaded;
-        max_size = chunk_authorisation.max_size;
-    } else {
-        throw new Exception("No valid storage type.");
-    }
+    Objects.Authentication_initalise authentication = await Authentication.initalise(context, config, redis, mode, asset_id, file_size, chunk);
+    long already_uploaded = authentication.already_uplodaded;
+    long max_size = authentication.max_size;
 
     if (already_uploaded == -1 || max_size == -1) {
-        throw new Exception("Already_uploaded or max_size wasn't set, something went wrong.");
+        throw new Exception("already_uploaded or max_size wasn't set correctly.");
     }
-
     if (already_uploaded > max_size) {
         context.Response.StatusCode = 400;
         await context.Response.WriteAsJsonAsync(Responses.error($"You cannot exceed authorised size of {max_size}"));
@@ -194,12 +200,16 @@ try {
     await Handler.setup(asset_id);
 
     // Write incoming chunk to disk.
+    // TODO: move this to dedicated function.
     await using (FileStream aFile = new FileStream($"/tmp/user_ingest_before_reencoding/{asset_id}/chunks/{asset_id}_{chunk}.ingest_chunk", FileMode.Append, FileAccess.Write))
     await context.Request.Form.Files[0].CopyToAsync(aFile);
 
     Console.WriteLine("OK WHAT");
     Console.WriteLine(already_uploaded+file_size);
     Console.WriteLine(max_size);
+
+    // For some storage types (e.g Redis) we need to update variables. This doesn't apply to the "remote_server" storage type.
+    await Authentication.clock_in(config, redis, asset_id, already_uploaded, max_size);
 
     // Now that we've written the incoming chunk to disk, we'll check if the video has been uploaded based on the allocated size.
     if (already_uploaded+file_size == max_size) {

@@ -12,7 +12,10 @@ namespace Interstellar
 {
     public class Processes
     {
-        public static async Task loop(Objects.Process_item[] processes, string asset_id, string file_type, HttpContext context) {
+        public static async Task<string> loop(Objects.Process_item[] processes, string asset_id, string file_type, HttpContext context) {
+            if (processes.Length == 0) {
+                throw new Exception("processes.Length is 0");
+            }
             foreach (var command in processes)
             {
                 string arguments = string.Join(" ", command.commands).Replace("%asset_id%", asset_id).Replace("%file_type%", file_type);
@@ -25,28 +28,29 @@ namespace Interstellar
                         FileName = command.program,
                         Arguments = arguments,
                         CreateNoWindow = true,
+                        RedirectStandardOutput = true
                     },
                     EnableRaisingEvents = true
                 };
 
-                StringBuilder output = new StringBuilder("");
+                // StringBuilder output = new StringBuilder("");
 
-                process.OutputDataReceived += (sender, e) =>
-                {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        // Console.WriteLine(e.Data);
-                        output.AppendLine(e.Data);
-                    }
-                };
+                // process.OutputDataReceived += (sender, e) =>
+                // {
+                //     if (!string.IsNullOrEmpty(e.Data))
+                //     {
+                //         // Console.WriteLine(e.Data);
+                //         output.AppendLine(e.Data);
+                //     }
+                // };
 
-                process.ErrorDataReceived += (sender, e) =>
-                {
-                    if (!string.IsNullOrEmpty(e.Data))
-                    {
-                        // Console.WriteLine(e.Data);
-                    }
-                };
+                // process.ErrorDataReceived += (sender, e) =>
+                // {
+                //     if (!string.IsNullOrEmpty(e.Data))
+                //     {
+                //         // Console.WriteLine(e.Data);
+                //     }
+                // };
 
                 process.Start();
                 process.WaitForExit();
@@ -55,33 +59,45 @@ namespace Interstellar
                     throw new Exception("Process failed to run.");
                 }
 
+                string line = process.StandardOutput.ReadToEnd();
+
                 if (command.handoff != null) {
-                    // try {
-                        // await handoff_process_output(null, output, command.handoff);
+                    // If this fails, an error throws. As you can see, there I drafted an exception handler to communicate the error directly to the client, but the code was refactored to close the connection when processing starts, so it's useless. TODO: Add a status endpoint call here that sends the message from the server.
+                    await handoff_process_output(null, line, command.handoff);
+                    
                     // } catch (Exception e) {
                     //     Objects.HTTPS_Request_Response error_data = JsonConvert.DeserializeObject<Objects.HTTPS_Request_Response>(e.Message);
                     //     Objects.errorD returned_error = JsonConvert.DeserializeObject<Objects.errorD>(error_data.response_body);
                     //     if (context != null && error_data.response_body != null && returned_error != null) {
                     //         context.Response.StatusCode = 400;
                     //         await context.Response.WriteAsJsonAsync(Responses.error($"External server returned an error: {returned_error.message}"));
-                    //         return;
+                    //         throw;
                     //     } else {
                     //         context.Response.StatusCode = 400;
                     //         await context.Response.WriteAsJsonAsync(Responses.error($"External server returned an error, cannot continue."));
-                    //         return;
+                    //         throw;
                     //     }
                     // }
                 }
+
+                return line;
             }
+
+            // Somehow the foreach loop has been skipped.
+            throw new Exception("Failed to execute processes");
         }
 
-        public static async Task<bool> handoff_process_output(Process process, StringBuilder manual_output, Objects.Process_item_handoff handoff) {
+        public static async Task<bool> handoff_process_output(Process process, string manual_output, Objects.Process_item_handoff handoff) {
             string line = process != null ? process.StandardOutput.ReadToEnd() : manual_output.ToString();
 
             Objects.HTTPS_Request_Response handoff_request = await Https.Request_POST(
                 handoff.endpoint,
                 line
             );
+
+            if (handoff_request.status_code != HttpStatusCode.OK) {
+                throw new Exception("Didn't get 200 status code.");
+            }
 
             // It's very important that if this function fails, it throws an exception.
             return true;

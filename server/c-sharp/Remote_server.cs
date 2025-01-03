@@ -15,13 +15,13 @@ namespace Interstellar
 {
     public class Remote_server
     {
-        public static async Task<Objects.presignedUrlAuthorization> Get_upload_urls(Objects.Config config, string[] files, string asset_id)
+        public static async Task<Objects.ObjectKey_URL[]> Get_upload_urls(Objects.Config config, string[] files, string asset_id)
         {
             Objects.HTTPS_Request_Response upload_url_request = await Https.Request_POST(
                 config.mode.storage.get_upload_urls,
                 new Objects.presignedUrlsBody {
                     asset_id = asset_id,
-                    files = files,
+                    object_keys = files,
                 }
             );
             Objects.presignedUrlAuthorization presignedurl_authorization_output = JsonConvert.DeserializeObject<Objects.presignedUrlAuthorization>(upload_url_request.response_body);
@@ -30,7 +30,7 @@ namespace Interstellar
                 throw new Exception("Presigned URLs error");
             }
 
-            return presignedurl_authorization_output;
+            return presignedurl_authorization_output.files;
         }
     }
 }

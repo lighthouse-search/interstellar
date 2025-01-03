@@ -1,4 +1,8 @@
 {
+    "functionality": ["upload", "process"],
+    "external_process": {
+        "endpoint": "https://example.com/internal/process"
+    },
     "request": {
         "limit": {
             "max_request_body_size": 45000000,
@@ -14,6 +18,7 @@
         "awesome_bucket": {
             "type": "s3",
             "host": "https://s3.example.com",
+            "bucket_name": "lighthouse",
             "access_key_env": "",
             "secret_access_key_env": "",
             "region": "auto"
@@ -42,13 +47,13 @@
         "default": {
             "type": "video",
             "storage_reference": {
-                "id": "awesome_bucket",
+                "id": "upload_server",
                 "path": "/%asset_id%"
             },
             "authentication_reference": {
                 "id": "my_awesome_auth_server"
             },
-            "database_reference": {
+            "database_reference111111": {
                 "id": "my_awesome_redis"
             },
             "features": {
@@ -116,10 +121,7 @@
                             "program": "ffprobe",
                             "commands": [
                                 "-v quiet -print_format json -show_format -show_streams /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type%"
-                            ],
-                            "handoff": {
-                                "endpoint": "https://oracularhades.com/handoff"
-                            }
+                            ]
                         }
                     ],
                     "reencode": [
@@ -127,10 +129,7 @@
                             "program": "ffmpeg",
                             "commands": [
                                 "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium"
-                            ],
-                            "handoff": {
-                                "endpoint": "https://oracularhades.com/handoff"
-                            }
+                            ]
                         },
                         {
                             "program": "ffmpeg",
@@ -145,9 +144,7 @@
                                 "-vf \"scale=-2:1080\" -c:v libx264 -crf 28 -profile:v high -b:v:5 2500k",
                                 "-f dash /tmp/user_ingest_reencoded/%asset_id%/video.mpd -y -preset medium"
                             ]
-                        }
-                    ],
-                    "thumbnail": [
+                        },
                         {
                             "program": "ffmpeg",
                             "commands":

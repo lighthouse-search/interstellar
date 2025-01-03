@@ -94,6 +94,7 @@ namespace Interstellar
                 video_limits_max = type == "stream" ? config.mode.video_limits.max.stream : config.mode.video_limits.max.format;
             }
 
+            // TODO: Double check this works.
             object video_limits_must_be = null;
             if (config.mode.video_limits.must != null)
             {
