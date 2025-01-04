@@ -25,6 +25,8 @@ builder.WebHost.UseKestrel(options =>
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(default_config.request.limit.keep_alive_timeout_from_minutes);
 });
 
+Console.WriteLine("ORIGINS");
+Console.WriteLine(default_config.request.cors.allowed_origins[0]);
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddCors(options =>
 {
@@ -33,9 +35,11 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(default_config.request.cors.allowed_origins)
         .AllowAnyHeader()
-        .AllowAnyMethod();
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
+
 
 var app = builder.Build();
 
