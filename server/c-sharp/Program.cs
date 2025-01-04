@@ -36,6 +36,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(default_config.request.cors.allowed_origins)
         .AllowAnyHeader()
         .AllowAnyMethod()
+        // TODO: Make AllowCredentials optional based on config value.
         .AllowCredentials();
     });
 });

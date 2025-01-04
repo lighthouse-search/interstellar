@@ -23,6 +23,7 @@ COPY --from=build-stage /home/linuxbrew/interstellar/Interstellar-video /home/ku
 
 RUN ["apt", "update", "-y"]
 RUN ["apt", "upgrade", "-y"]
+RUN ["apt", "install", "-y", "ffmpeg"]
 
 RUN adduser kube --disabled-login
 RUN usermod -s /bin/rbash kube
