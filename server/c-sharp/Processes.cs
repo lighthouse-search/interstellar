@@ -12,10 +12,11 @@ namespace Interstellar
 {
     public class Processes
     {
-        public static async Task<string> loop(Objects.Process_item[] processes, string asset_id, string file_type, HttpContext context) {
+        public static async Task<List<string>> loop(Objects.Process_item[] processes, string asset_id, string file_type, HttpContext context) {
             if (processes.Length == 0) {
                 throw new Exception("processes.Length is 0");
             }
+            List<string> outputs = new List<string>();
             foreach (var command in processes)
             {
                 string arguments = string.Join(" ", command.commands).Replace("%asset_id%", asset_id).Replace("%file_type%", file_type);
@@ -80,11 +81,10 @@ namespace Interstellar
                     // }
                 }
 
-                return line;
+                outputs.Add(line);
             }
 
-            // Somehow the foreach loop has been skipped.
-            throw new Exception("Failed to execute processes");
+            return outputs;
         }
 
         public static async Task<bool> handoff_process_output(Process process, string manual_output, Objects.Process_item_handoff handoff) {

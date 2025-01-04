@@ -240,6 +240,7 @@ try {
 {
     Console.WriteLine("ERROR2!", ex);
     // context.Response.StatusCode = 500;
+    context.Response.StatusCode = 500;
     await Handler.Fatal_error(context, asset_id);
     return;
 }

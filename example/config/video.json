@@ -25,13 +25,13 @@
         },
         "upload_server": {
             "type": "remote_server",
-            "get_upload_urls": "http://127.0.0.1:4455/internal/get-upload-urls"
+            "get_upload_urls": "http://127.0.0.1:4455/internal/video/get-upload-urls"
         }
     },
     "authentication": {
         "my_awesome_auth_server": {
             "type": "remote_server",
-            "chunk_authorisation": "http://127.0.0.1:4455/internal/chunk-authorisation"
+            "chunk_authorisation": "http://127.0.0.1:4455/internal/video/chunk-authorisation"
         }
     },
     "database": {

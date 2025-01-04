@@ -66,7 +66,8 @@ namespace Interstellar
         }
 
         public static async Task video(HttpContext context, Objects.Config config, string asset_id, string file_type) {
-            string ffprobe_output = await Processes.loop(config.mode.ffmpeg.commands.validation, asset_id, file_type, context);
+            List<string> validation_commands = await Processes.loop(config.mode.ffmpeg.commands.validation, asset_id, file_type, context);
+            string ffprobe_output = validation_commands[validation_commands.Count-1];
             Console.WriteLine(ffprobe_output);
 
             Objects.ffprobevideoinfo process_output = JsonConvert.DeserializeObject<Objects.ffprobevideoinfo>(ffprobe_output);
@@ -120,8 +121,6 @@ namespace Interstellar
                     await Processes.loop(config.mode.ffmpeg.commands.reencode, asset_id, file_type, context);
                 }
             }
-
-            return;
         }
     }
 }

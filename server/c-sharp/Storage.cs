@@ -18,6 +18,8 @@ namespace Interstellar
         public static async Task initalise_move(HttpContext context, Objects.Config config, string asset_id, string file_type, string base_path) {
             string storage_type = config.mode.storage.type.ToLower();
 
+            Console.WriteLine("Initialising move to storage...");
+
             List<Objects.files_in_directory> files_in_directory = File_operations.Get_files_in_directory(new string[] { base_path }, true);
             List<String> files_in_directory_full_paths = files_in_directory.Select(file => file.full_path).ToList();
             List<String> files_in_directory_cropped_paths = files_in_directory.Select(file => file.cropped_path).ToList();
@@ -44,6 +46,8 @@ namespace Interstellar
                     file_path = item.file.full_path
                 });
             }
+
+            Console.WriteLine("Finished storage preperation. Moving to storage.");
 
             await Https.Upload_directory(config, files_and_urls);
         }

@@ -58,6 +58,7 @@ namespace Interstellar {
 
         public static async Task Upload_directory(Objects.Config config, List<Objects.File_path_URL> files)
         {
+            Console.WriteLine("Starting directory upload...");
             int active_connections = 0;
             int filecount_offset = 0;
             long files_count = files.Count-1; // We -1 as .Count starts from 1, not 0.
@@ -89,6 +90,7 @@ namespace Interstellar {
             // Wait for any remaining transfers to complete.
             // "active_connections > 0" is here because when we do "offset++", we haven't finished the transfer yet, so the while loop will prematurely close. 
             while (active_connections > 0) {}
+            Console.WriteLine("Finished directory upload.");
         }
     }
 }
