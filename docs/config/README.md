@@ -1,6 +1,8 @@
 Configuration
 ==============
 
+> :warning: **Before reading, find an [example](/docs/config/examples)**: This documentation is much easier to read when comparing it to a configuration that matches your use-case.
+
 ## request
 ### limit
 ```
@@ -241,7 +243,7 @@ Configuration
 
 #### video_limits.(min/max/must_be/must_not_be/includes/does_not_include)
 
-Now, this is a little complicated, but it's actually not that hard. When you set a command in post_processing.validation.commands, the output of your last command is available here (provided it's JSON). Here you, can statically test those values are within certain boundries.
+> :light_bulb: This is a little complicated, but it's actually not that hard. When you set a command in post_processing.validation.commands, the output of your last command is available here (provided it's JSON). Here you, can statically test those values are within certain boundries.
 
 **It's important to note:**
 
