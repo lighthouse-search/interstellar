@@ -25,8 +25,6 @@ builder.WebHost.UseKestrel(options =>
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(default_config.request.limit.keep_alive_timeout_from_minutes);
 });
 
-Console.WriteLine("ORIGINS");
-Console.WriteLine(default_config.request.cors.allowed_origins[0]);
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddCors(options =>
 {
@@ -107,12 +105,14 @@ app.MapGet("/mode/list", async (HttpContext context) => {
 
 app.MapPost("/upload-chunk", async (HttpContext context) => {
     string asset_id = null;
+    // This has the possibility to return the wrong configuration for the specified mode if it fails immediately before 'Config.Get(mode);' is done and could potentially give incorrect information in the catch {}, however this is unlikely, and very much worth it so that we can use config data in the catch {}.
+    Objects.Config config = Config.Get(null);
 try {
     Console.WriteLine("/upload-chunk");
     Objects.UploadSignedObject UploadSignedObject = JsonConvert.DeserializeObject<Objects.UploadSignedObject>(context.Request.Form["metadata"].ToString());
 
     string mode = UploadSignedObject.mode;
-    Objects.Config config = Config.Get(mode);
+    config = Config.Get(mode);
 
     ConnectionMultiplexer conn_redis = null;
     IDatabase redis = null;
@@ -228,6 +228,9 @@ try {
 
         await Post_processing.initalise(context, config, asset_id, file_type);
     } else {
+        // Set 'uploading' and transfer progress as status.
+        await Status.update(config, asset_id, "uploading", null, already_uploaded, file_size, null);
+
         context.Response.StatusCode = 200;
         await context.Response.WriteAsJsonAsync(new Objects.errorD 
         {
@@ -239,7 +242,9 @@ try {
 } catch (WebException ex)
 {
     Console.WriteLine("ERROR2!", ex);
-    // context.Response.StatusCode = 500;
+    // Report the causality.
+    await Status.update(config, asset_id, "failed", null, -1, -1, null);
+    
     context.Response.StatusCode = 500;
     await Handler.Fatal_error(context, asset_id);
     return;

@@ -12,13 +12,17 @@ namespace Interstellar
 {
     public class Processes
     {
-        public static async Task<List<string>> loop(Objects.Process_item[] processes, string asset_id, string file_type, HttpContext context) {
-            if (processes.Length == 0) {
+        public static async Task<List<string>> loop(List<Objects.Process_item> processes, Objects.Config config, string asset_id, string file_type, string section, HttpContext context) {
+            if (processes.Count == 0) {
                 throw new Exception("processes.Length is 0");
             }
+
             List<string> outputs = new List<string>();
             foreach (var command in processes)
             {
+                // Set vague status that we're running post processing commands.
+                await Status.update(config, asset_id, "processing", section, processes.IndexOf(command), processes.Count, null);
+
                 string arguments = string.Join(" ", command.commands).Replace("%asset_id%", asset_id).Replace("%file_type%", file_type);
                 Console.WriteLine("Running command: " + "ffmpeg " + arguments);
 

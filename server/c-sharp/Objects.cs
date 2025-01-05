@@ -220,6 +220,11 @@ namespace Interstellar
             public string password_env { get; set; }
         }
 
+        public class Config_status
+        {
+            public string status_update { get; set; }
+        }
+
         public class Config_mode
         {
             public string type { get; set; }
@@ -230,6 +235,7 @@ namespace Interstellar
             public Config_mode_authentication_reference authentication_reference { get; set; }
             public Config_mode_database_reference database_reference { get; set; }
             public Config_database database { get; set; }
+            public Config_status status { get; set; }
             public Config_features features { get; set; }
             public Config_mode_video_limits video_limits { get; set; }
             public Config_mode_FFmpeg ffmpeg { get; set; }
@@ -423,8 +429,8 @@ namespace Interstellar
 
         public class Config_mode_FFmpeg_Commands
         {
-            public Process_item[] validation { get; set; }
-            public Process_item[] reencode { get; set; }
+            public List<Process_item> validation { get; set; }
+            public List<Process_item> reencode { get; set; }
         }
 
         public class Config_message
@@ -473,6 +479,19 @@ namespace Interstellar
         public class Authentication_initalise {
             public long already_uplodaded { get; set; } = -1;
             public long max_size { get; set; } = -1;
+        }
+
+        public class Status_update_body {
+            public string asset_id { get; set; }
+            public string type { get; set; }
+            public string section { get; set; }
+            public long stage { get; set; }
+            public long out_of { get; set; }
+            public Status_update_body_video video { get; set; }
+        }
+        public class Status_update_body_video {
+            public long out_time_ms { get; set; }
+            public string out_time { get; set; }
         }
     }
 }

@@ -15,6 +15,9 @@ namespace Interstellar
     {
         public static async Task initalise(HttpContext context, Objects.Config config, string asset_id, string file_type) {
             Console.WriteLine("We're processing!");
+
+            // Update status as post-processing.
+            await Status.update(config, asset_id, "processing", "collecting_files", -1, -1, null);
             
             // TODO: Make this chunk merging into a dedicated function.
             for (int i = 0; i < Directory.GetFiles($"/tmp/user_ingest_before_reencoding/{asset_id}/chunks").Length; i++)
@@ -56,17 +59,23 @@ namespace Interstellar
                 Console.WriteLine("Mode type is not 'video'. No need to use FFmpeg. Continuing to storage.");
             }
 
+            // Update status as moving to storage.
+            await Status.update(config, asset_id, "moving_to_storage", null, -1, -1, null);
+
             // TODO: This uses user_ingest_reencoded, which is video exclusive. config.mode.type 'file' always fails. need to fix.
             await Storage.initalise_move(context, config, asset_id, file_type, $"/tmp/user_ingest_reencoded/{asset_id}" );
 
             // Remove uploaded data from disk.
             await Handler.clean_up(context, asset_id);
+            
+            // Let 'em know (that we finished the transfer and post-processing).
+            await Status.update(config, asset_id, "uploaded", null, -1, -1, null);
 
             Console.WriteLine("Finished.");
         }
 
         public static async Task video(HttpContext context, Objects.Config config, string asset_id, string file_type) {
-            List<string> validation_commands = await Processes.loop(config.mode.ffmpeg.commands.validation, asset_id, file_type, context);
+            List<string> validation_commands = await Processes.loop(config.mode.ffmpeg.commands.validation, config, asset_id, file_type, "validation", context);
             string ffprobe_output = validation_commands[validation_commands.Count-1];
             Console.WriteLine(ffprobe_output);
 
@@ -118,7 +127,7 @@ namespace Interstellar
             // TODO: If no ffmpeg commands then we need to move the files to user_ingest_reencoded or some other directory so they actually upload.
             if (config.mode.ffmpeg != null && config.mode.ffmpeg.commands != null) {
                 if (config.mode.ffmpeg.commands.reencode != null) {
-                    await Processes.loop(config.mode.ffmpeg.commands.reencode, asset_id, file_type, context);
+                    await Processes.loop(config.mode.ffmpeg.commands.reencode, config, asset_id, file_type, "reencode", context);
                 }
             }
         }

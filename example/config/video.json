@@ -25,13 +25,13 @@
         },
         "upload_server": {
             "type": "remote_server",
-            "get_upload_urls": "http://127.0.0.1:4455/internal/video/get-upload-urls"
+            "get_upload_urls": "http://127.0.0.1:4455/api/internal/video/get-upload-urls"
         }
     },
     "authentication": {
         "my_awesome_auth_server": {
             "type": "remote_server",
-            "chunk_authorisation": "http://127.0.0.1:4455/internal/video/chunk-authorisation"
+            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk-authorisation"
         }
     },
     "database": {
@@ -55,6 +55,9 @@
             },
             "database_reference111111": {
                 "id": "my_awesome_redis"
+            },
+            "status": {
+                "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
             },
             "features": {
                 "reencode": true,
@@ -128,7 +131,7 @@
                         {
                             "program": "ffmpeg",
                             "commands": [
-                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium"
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium -progress pipe:1"
                             ]
                         },
                         {
