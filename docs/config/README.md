@@ -26,9 +26,9 @@ Configuration
 | keep_alive_timeout_from_minutes | int || 7200 | How long an HTTPS request should be kept-alive in minutes. |
 
 ### cors
-| Key | Type | Possible values | description
-|----------|----------|----------|----------|
-| allowed_origins | array[string] || [Access-Control-Allow-Origin](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin) |
+| Key | Type | Possible values | default | description
+|----------|----------|----------|----------|----------|
+| allowed_origins | array[string] |||[Access-Control-Allow-Origin](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin) |
 
 ## storage.(your_awesome_storage_name)
 ### Type: S3
@@ -211,22 +211,22 @@ Configuration
         }
     },
 ```
-| Key | Type | Possible values | description
-|----------|----------|----------|----------|
-| mode | string | file, video |  |
-| storage_reference.id | string ||  |
-| storage_reference.path | string ||  |
-| authentication_reference.id | string ||  |
-| database_reference.id | string ||  |
-| status.status_update | string ||  |
-| features.file_types | string[] ||  |
-| file_alias.[input filename] | string | Any valid filename extension. |  |
+| Key | Type | Possible values | default | description
+|----------|----------|----------|----------|----------|
+| mode | string | file, video || |
+| storage_reference.id | string ||| The [storage](docs/config?ref_type=heads#storageyour_awesome_storage_name) server you'd like to store these files in. |
+| storage_reference.path | string || /%asset_id% | Path in storage you want to store this file at. |
+| authentication_reference.id | string ||| [Authentication](docs/config?ref_type=heads#authenticationyour_awesome_storage_name) server you'd like use. |
+| database_reference.id | string ||| [Database](docs/config?ref_type=heads#authenticationyour_awesome_storage_name) server you'd like to use. |
+| status.status_update | string |||  |
+| features.file_types | string[] ||| Your accepted file types. |
+| file_alias.[input filename] | string ||| Any valid filename extension. |
 
 #### post_processing.commands.[type (either 'validation' or 'reencode')]
-| Key | Type | Possible values | description
-|----------|----------|----------|----------|
-| post_processing.commands.[type].program | string ||
-| post_processing.commands.[type].commands | string[] ||
+| Key | Type | Possible values | default | description
+|----------|----------|----------|----------|----------|
+| post_processing.commands.[type].program | string ||| The process you'd like to run (e.g. ```ffmpeg```)
+| post_processing.commands.[type].commands | string[] ||| Your command arguments. (e.g. ```-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium```)
 
 #### video_limits.(min/max/must_be/must_not_be/includes/does_not_include)
 
