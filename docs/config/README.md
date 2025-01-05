@@ -10,7 +10,7 @@ Configuration
     "request": {
         "limit": {
             "max_request_body_size": 45000000,
-            "keep_alive_timeout_from_minutes": 60
+            "keep_alive_timeout_from_minutes": 7200
         },
         "cors": {
             "allowed_origins": [
@@ -20,15 +20,15 @@ Configuration
     },
 }
 ```
-| Key | Type | Possible values | description
-|----------|----------|----------|----------|
-| max_request_body_size | int ||  |
-| keep_alive_timeout_from_minutes | int ||  |
+| Key | Type | Possible values | default | description
+|----------|----------|----------|----------|----------|
+| max_request_body_size | int || 1,000,000,000 bytes (1GB)| The maximum HTTPS POST body size in bytes. |
+| keep_alive_timeout_from_minutes | int || 7200 | How long an HTTPS request should be kept-alive in minutes. |
 
 ### cors
 | Key | Type | Possible values | description
 |----------|----------|----------|----------|
-| allowed_origins | array[string] ||  |
+| allowed_origins | array[string] || [Access-Control-Allow-Origin](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin) |
 
 ## storage.(your_awesome_storage_name)
 ### Type: S3
@@ -45,14 +45,14 @@ Configuration
         }
     },
 ```
-| Key | Type | Possible values | description
-|----------|----------|----------|----------|
-| type | string | s3, remote_server |  |
-| host | string ||  |
-| bucket_name | string ||  |
-| access_key_env | string ||  |
-| secret_access_key_env | string ||  |
-| region | string ||  |
+| Key | Type | Possible values | default | description
+|----------|----------|----------|----------|----------|
+| type | string | s3, remote_server ||  |
+| host | string ||| The address of your S3 server. |
+| bucket_name | string ||| Your S3 bucket name. |
+| access_key_env | string ||| The name of the environment variable storing your ``access_key_env`` (e.g my_awesome_access_key) |
+| secret_access_key_env | string ||| The name of the environment variable storing your ``secret_access_key_env`` (e.g my_awesome_secret_access_key) |
+| region | string || auto | The region of your S3 server |
 
 ### Type: remote_server
 ```
@@ -65,10 +65,10 @@ Configuration
     },
 }
 ```
-| Key | Type | Possible values | description
-|----------|----------|----------|----------|
+| Key | Type | Possible values | default | description
+|----------|----------|----------|----------|----------|
 | type | string | s3, remote_server |  |
-| get_upload_urls | string ||  |
+| get_upload_urls | string |||  |
 
 ## authentication.(your_awesome_storage_name)
 ### Type: remote_server
@@ -84,7 +84,7 @@ Configuration
 ```
 | Key | Type | Possible values | description
 |----------|----------|----------|----------|
-| type | string | remote_server |  |
+| type | string | remote_server, redis |  |
 | chunk_authorisation | string ||  |
 
 ## database.(your_awesome_storage_name)
@@ -101,12 +101,12 @@ Configuration
     },
 }
 ```
-| Key | Type | Possible values | description
-|----------|----------|----------|----------|
-| type | string | remote_server |  |
-| hosts | string[] ||  |
-| username_env | string ||  |
-| password_env | string ||  |
+| Key | Type | Possible values | default | description
+|----------|----------|----------|----------|----------|
+| type | string | remote_server ||  |
+| hosts | string[] ||| Your Redis hosts. |
+| username_env | string ||| The name of the environment variable storing your Redis username (e.g my_awesome_redis_username) |
+| password_env | string ||| The name of the environment variable storing your Redis password (e.g my_awesome_redis_password) |
 
 ## Mode
 ```
@@ -120,7 +120,7 @@ Configuration
             "authentication_reference": {
                 "id": "my_awesome_auth_server"
             },
-            "database_reference111111": {
+            "database_reference": {
                 "id": "my_awesome_redis"
             },
             "status": {
