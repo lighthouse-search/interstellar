@@ -190,29 +190,10 @@ Configuration
             },
             "video_limits": {
                 "min": {
-                    "stream": {
-                        "width": 256,
-                        "height": 144,
-                        "duration": 1,
-                        "size": 1,
-                        "bit_rate": 0
-                    },
-                    "format": {
-                        "probe_score": 98
-                    }
+                    
                 },
                 "max": {
-                    "video_streams": 1,
-                    "audio_streams": -1,
-                    "stream": {
-                        "width": 3840,
-                        "height": 2160
-                    },
-                    "format": {
-                        "size": 5000000000,
-                        "bit_rate": 600000000,
-                        "nb_streams": 10000
-                    }
+
                 },
                 "must_be": {
                     
