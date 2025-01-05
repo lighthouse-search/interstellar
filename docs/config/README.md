@@ -143,6 +143,51 @@ Configuration
                     "x-matroska": "mkv"
                 }
             },
+            "post_processing": {
+                "commands": {
+                    "validation": [
+                        {
+                            "program": "ffprobe",
+                            "commands": [
+                                "-v quiet -print_format json -show_format -show_streams /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type%"
+                            ]
+                        }
+                    ],
+                    "processing": [
+                        {
+                            "program": "ffmpeg",
+                            "commands": [
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium -progress pipe:1"
+                            ]
+                        },
+                        {
+                            "program": "ffmpeg",
+                            "commands": [
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
+                                "-map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0",
+                                "-vf \"scale=-2:144\" -c:v libx264 -crf 28 -profile:v baseline -b:v:0 250k",
+                                "-vf \"scale=-2:240\" -c:v libx264 -crf 28 -profile:v baseline -b:v:1 500k",
+                                "-vf \"scale=-2:360\" -c:v libx264 -crf 28 -profile:v main -b:v:2 750k",
+                                "-vf \"scale=-2:480\" -c:v libx264 -crf 28 -profile:v main -b:v:3 1000k",
+                                "-vf \"scale=-2:720\" -c:v libx264 -crf 28 -profile:v high -b:v:4 1500k",
+                                "-vf \"scale=-2:1080\" -c:v libx264 -crf 28 -profile:v high -b:v:5 2500k",
+                                "-f dash /tmp/user_ingest_reencoded/%asset_id%/video.mpd -y -preset medium"
+                            ]
+                        },
+                        {
+                            "program": "ffmpeg",
+                            "commands":
+                            [
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
+                                "-preset veryfast",
+                                "-vf \"scale=-1:480\"",
+                                "-frames:v 1",
+                                "/tmp/user_ingest_reencoded/%asset_id%/auto_generated_thumbnail.jpeg"
+                            ]
+                        }
+                    ]
+                }
+            },
             "video_limits": {
                 "min": {
                     "stream": {
@@ -182,64 +227,25 @@ Configuration
 
                 }
             },
-            "post_processing": {
-                "commands": {
-                    "validation": [
-                        {
-                            "program": "ffprobe",
-                            "commands": [
-                                "-v quiet -print_format json -show_format -show_streams /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type%"
-                            ]
-                        }
-                    ],
-                    "reencode": [
-                        {
-                            "program": "ffmpeg",
-                            "commands": [
-                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium -progress pipe:1"
-                            ]
-                        },
-                        {
-                            "program": "ffmpeg",
-                            "commands": [
-                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
-                                "-map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0",
-                                "-vf \"scale=-2:144\" -c:v libx264 -crf 28 -profile:v baseline -b:v:0 250k",
-                                "-vf \"scale=-2:240\" -c:v libx264 -crf 28 -profile:v baseline -b:v:1 500k",
-                                "-vf \"scale=-2:360\" -c:v libx264 -crf 28 -profile:v main -b:v:2 750k",
-                                "-vf \"scale=-2:480\" -c:v libx264 -crf 28 -profile:v main -b:v:3 1000k",
-                                "-vf \"scale=-2:720\" -c:v libx264 -crf 28 -profile:v high -b:v:4 1500k",
-                                "-vf \"scale=-2:1080\" -c:v libx264 -crf 28 -profile:v high -b:v:5 2500k",
-                                "-f dash /tmp/user_ingest_reencoded/%asset_id%/video.mpd -y -preset medium"
-                            ]
-                        },
-                        {
-                            "program": "ffmpeg",
-                            "commands":
-                            [
-                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
-                                "-preset veryfast",
-                                "-vf \"scale=-1:480\"",
-                                "-frames:v 1",
-                                "/tmp/user_ingest_reencoded/%asset_id%/auto_generated_thumbnail.jpeg"
-                            ]
-                        }
-                    ]
-                }
-            }
         }
     },
 ```
 | Key | Type | Possible values | description
 |----------|----------|----------|----------|
 | mode | string | file, video |  |
-| storage_reference.id | string] ||  |
+| storage_reference.id | string ||  |
 | storage_reference.path | string ||  |
 | authentication_reference.id | string ||  |
 | database_reference.id | string ||  |
 | status.status_update | string ||  |
 | features.file_types | string[] ||  |
 | file_alias.[input filename] | string | Any valid filename extension. |  |
+
+#### post_processing.commands.[type (either 'validation' or 'reencode')]
+| Key | Type | Possible values | description
+|----------|----------|----------|----------|
+| post_processing.commands.[type].program | string ||
+| post_processing.commands.[type].commands | string[] ||
 
 #### video_limits.(min/max/must_be/must_not_be/includes/does_not_include)
 
