@@ -23,7 +23,8 @@ curl -X POST https://127.0.0.1:4455/status/update \
   "section": [..],
   "stage": [..],
   "out_of": [..],
-  "video": [..]
+  "video": [..],
+  "authorisation": [jwt/token]
 }'
 ```
 
@@ -36,6 +37,7 @@ curl -X POST https://127.0.0.1:4455/status/update \
 | out_of | int || | out_of is an extension of "stage" except it shows the total. E.g. the total files we're moving to storage. |
 | video.out_time_ms | int || | How much of the video FFmpeg has processed in milliseconds. |
 | video.out_time | string || | How much of the video FFmpeg has processed, e.g. 00:00:23.010975 |
+| authorisation | string[] || | (optional): An authorisation string (e.g JWT, Token) passed by the client to authenticate the transfer. |
 
 ## What's expected of you.
 You can either return any ```2xx status``` or any other status code to signal success or any other status code to signal an error. Interstellar doesn't mind if your status update fails and will continue the transfer as status updates are frequent.
