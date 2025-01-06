@@ -40,8 +40,7 @@ curl -X POST https://127.0.0.1:4455/get-upload-urls \
 ```
 {
     "asset_id": [current_asset_id],
-    "uploaded": [bytes uploaded so far],
-    "files": [{ "object_key": "awesome_filename.mpd", "url": "https://s3.example.com/awesome_filename.mpd?AWSAccessKeyId=...&Signature=...&Expires=..." }]
+    "object_keys": [{ "object_key": "awesome_filename.mpd", "url": "https://s3.example.com/awesome_filename.mpd?AWSAccessKeyId=...&Signature=...&Expires=..." }]
 }
 ```
 
