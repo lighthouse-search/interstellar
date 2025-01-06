@@ -68,7 +68,7 @@ Configuration
 | Key | Type | Possible values | default | description
 |----------|----------|----------|----------|----------|
 | type | string | s3, remote_server |  |
-| get_upload_urls | string |||  |
+| get_upload_urls | string ||| The [Get upload urls](/docs/https/external-server/get-upload-urls.md) endpoint you'd like to use. |
 
 ## authentication.(your_awesome_storage_name)
 ### Type: remote_server
@@ -85,7 +85,7 @@ Configuration
 | Key | Type | Possible values | description
 |----------|----------|----------|----------|
 | type | string | remote_server, redis |  |
-| chunk_authorisation | string ||  |
+| chunk_authorisation | string || The [Chunk Authorisation](/docs/https/external-server/chunk-authorisation.md) endpoint you'd like to use. |
 
 ## database.(your_awesome_storage_name)
 ### Type: redis
@@ -218,7 +218,7 @@ Configuration
 | storage_reference.path | string || /%asset_id% | Path in storage you want to store this file at. |
 | authentication_reference.id | string ||| [Authentication](docs/config?ref_type=heads#authenticationyour_awesome_storage_name) server you'd like use. |
 | database_reference.id | string ||| [Database](docs/config?ref_type=heads#authenticationyour_awesome_storage_name) server you'd like to use. |
-| status.status_update | string |||  |
+| status.status_update | string ||| The [Status update](/docs/https/external-server/status-update.md) endpoint you'd like to use. |
 | features.file_types | string[] ||| Your accepted file types. |
 | file_alias.[input filename] | string ||| Any valid filename extension. |
 
