@@ -4,9 +4,19 @@
 Interstellar ("between stars") is an efficient transfer protocol.
 
 **Configurations**
-- [Video](/example/config/video.json)
-- [File transfer](/example/config/file-transfer.json)
+- [Video](/example/config/video.md)
+- [File transfer](/example/config/file-transfer.md)
+
+**Quickstarts**
+
+External authentication/storage server + Interstellar configuration, ready to go.
+- [Rust](/example/quickstarts/rust/README.md)
+- [C#](/example/quickstarts/c-sharp/README.md)
+- [Typescript](//example/quickstarts/typescript/README.md)
 
 **Server implementations**
-- [C#](https://example.com)
+- [C#](/server/c-sharp/)
 - More soon!
+
+**TODO:**
+- 

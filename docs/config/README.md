@@ -77,7 +77,7 @@ Configuration
     "authentication": {
         "my_awesome_auth_server": {
             "type": "remote_server",
-            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk-authorisation"
+            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk/authorisation"
         }
     },
 }
