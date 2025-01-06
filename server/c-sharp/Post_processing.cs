@@ -75,7 +75,7 @@ namespace Interstellar
         }
 
         public static async Task video(HttpContext context, Objects.Config config, string asset_id, string file_type) {
-            List<string> validation_commands = await Processes.loop(config.mode.ffmpeg.commands.validation, config, asset_id, file_type, "validation", context);
+            List<string> validation_commands = await Processes.loop(config.mode.post_processing.commands.validation, config, asset_id, file_type, "validation", context);
             string ffprobe_output = validation_commands[validation_commands.Count-1];
             Console.WriteLine(ffprobe_output);
 
@@ -124,10 +124,10 @@ namespace Interstellar
                 return;
             }
 
-            // TODO: If no ffmpeg commands then we need to move the files to user_ingest_reencoded or some other directory so they actually upload.
-            if (config.mode.ffmpeg != null && config.mode.ffmpeg.commands != null) {
-                if (config.mode.ffmpeg.commands.reencode != null) {
-                    await Processes.loop(config.mode.ffmpeg.commands.reencode, config, asset_id, file_type, "reencode", context);
+            // TODO: If no commands then we need to move the files to user_ingest_reencoded or some other directory so they actually upload.
+            if (config.mode.post_processing != null && config.mode.post_processing.commands != null) {
+                if (config.mode.post_processing.commands.processing != null) {
+                    await Processes.loop(config.mode.post_processing.commands.processing, config, asset_id, file_type, "reencode", context);
                 }
             }
         }

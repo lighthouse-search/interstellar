@@ -183,7 +183,6 @@ namespace Interstellar
 
         public class Config_features
         {
-            public bool reencode { get; set; }
             public string[] file_types { get; set; }
             public Dictionary<string, string> file_alias { get; set; }
         }
@@ -195,7 +194,7 @@ namespace Interstellar
             public string bucket_name { get; set; }
             public string access_key_env { get; set; }
             public string secret_access_key_env { get; set; }
-            public string region { get; set; }
+            public string region { get; set; } = "auto";
             public string get_upload_urls { get; set; }
             public Config_storage_multithreaded_transfer multithreaded_transfer { get; set; } = new Config_storage_multithreaded_transfer {};
         }
@@ -238,14 +237,14 @@ namespace Interstellar
             public Config_status status { get; set; }
             public Config_features features { get; set; }
             public Config_mode_video_limits video_limits { get; set; }
-            public Config_mode_FFmpeg ffmpeg { get; set; }
+            public Config_mode_Post_processing post_processing { get; set; }
             public bool invisible { get; set; }
         }
 
         public class Config_mode_storage_reference
         {
             public string id { get; set; }
-            public string path { get; set; }
+            public string path { get; set; } = "/%asset_id%";
         }
 
         public class Config_mode_authentication_reference
@@ -292,6 +291,7 @@ namespace Interstellar
         public class Config_mode_video_limits_includes_and_not_includes {
             public int video_streams { get; set; } = -1;
             public int audio_streams { get; set; } = -1;
+            // TODO: We're only using the int versions of stream here.
             public Config_mode_video_limits_min_max_stream stream { get; set; }
             public Objects.ffprobevideoinfoformat format { get; set; }
         }
@@ -321,7 +321,7 @@ namespace Interstellar
             public object duration { get; set; }
             public object size { get; set; }
             public object bit_rate { get; set; }
-            public int probe_score { get; set; } = -1;
+            public int probe_score { get; set; } = 90;
         }
 
         // // Only FFprobe stream string values.
@@ -413,8 +413,8 @@ namespace Interstellar
 
         public class Config_request_limit
         {
-            public int max_request_body_size { get; set; } = 45000000; // 45000000 = 0.048mb
-            public int keep_alive_timeout_from_minutes { get; set; }
+            public int max_request_body_size { get; set; } = 1000000000; // 45000000 = 0.048mb // 1,000,000,000 = 1GB
+            public int keep_alive_timeout_from_minutes { get; set; } = 7200;
         }
 
         public class Config_request_cors
@@ -422,15 +422,15 @@ namespace Interstellar
             public string[] allowed_origins { get; set; }
         }
 
-        public class Config_mode_FFmpeg
+        public class Config_mode_Post_processing
         {
-            public Config_mode_FFmpeg_Commands commands { get; set; }
+            public Config_mode_Post_processing_Commands commands { get; set; }
         }
 
-        public class Config_mode_FFmpeg_Commands
+        public class Config_mode_Post_processing_Commands
         {
             public List<Process_item> validation { get; set; }
-            public List<Process_item> reencode { get; set; }
+            public List<Process_item> processing { get; set; }
         }
 
         public class Config_message

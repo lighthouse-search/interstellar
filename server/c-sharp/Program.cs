@@ -22,7 +22,7 @@ if (default_config == null)
 builder.WebHost.UseKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = default_config.request.limit.max_request_body_size;
-    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(default_config.request.limit.keep_alive_timeout_from_minutes);
+    options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(default_config.request.limit.keep_alive_timeout_from_minutes);
 });
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";

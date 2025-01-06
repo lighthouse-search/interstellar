@@ -60,7 +60,6 @@
                 "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
             },
             "features": {
-                "reencode": true,
                 "file_types": [
                     "mp4",
                     "mkv",
@@ -82,7 +81,6 @@
                     "stream": {
                         "width": 256,
                         "height": 144,
-                        "ffprobe_score": 98,
                         "duration": 1,
                         "size": 1,
                         "bit_rate": 0
@@ -117,7 +115,7 @@
 
                 }
             },
-            "ffmpeg": {
+            "post_processing": {
                 "commands": {
                     "validation": [
                         {
@@ -127,7 +125,7 @@
                             ]
                         }
                     ],
-                    "reencode": [
+                    "processing": [
                         {
                             "program": "ffmpeg",
                             "commands": [
