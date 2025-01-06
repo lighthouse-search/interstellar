@@ -2,7 +2,6 @@ using System;
 using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Interstellar;
 
 public class S3
 {

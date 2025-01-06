@@ -1,10 +1,10 @@
-using Interstellar;
+using External_server;
 using System;
 using System.Net;
 using Newtonsoft.Json.Linq;
 using MySql.Data.MySqlClient;
 
-namespace Interstellar
+namespace External_server
 {
     public static class Sql
     {

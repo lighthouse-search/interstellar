@@ -1,9 +1,9 @@
-using Interstellar;
+using External_server;
 using System;
 using System.Net;
 using Newtonsoft.Json.Linq;
 
-namespace Interstellar
+namespace External_server
 {
     public static class Responses
     {

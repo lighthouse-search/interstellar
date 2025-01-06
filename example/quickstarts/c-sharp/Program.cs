@@ -1,6 +1,6 @@
 // Check HSTS.
 
-using Interstellar;
+using External_server;
 using System.Text;
 using System.Net;
 using Newtonsoft.Json;

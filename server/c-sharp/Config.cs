@@ -81,6 +81,7 @@ namespace Interstellar
                 throw new Exception("type must be stream/format.");
             }
 
+            // TODO: Rename video_limits to something else and parse the output as a Directory<>
             List<Objects.Config_video_limit_issues> limit_issues = new List<Objects.Config_video_limit_issues>();
 
             object video_limits_min = null;

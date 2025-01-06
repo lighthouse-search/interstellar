@@ -1,8 +1,4 @@
 {
-    "functionality": ["upload", "process"],
-    "external_process": {
-        "endpoint": "https://example.com/internal/process"
-    },
     "request": {
         "limit": {
             "max_request_body_size": 45000000,
@@ -18,14 +14,10 @@
         "awesome_bucket": {
             "type": "s3",
             "host": "https://s3.example.com",
-            "bucket_name": "lighthouse",
+            "bucket_name": "your_s3_bucket_name",
             "access_key_env": "",
             "secret_access_key_env": "",
             "region": "auto"
-        },
-        "upload_server": {
-            "type": "remote_server",
-            "get_upload_urls": "http://127.0.0.1:4455/api/internal/video/get-upload-urls"
         }
     },
     "authentication": {
@@ -34,27 +26,15 @@
             "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk-authorisation"
         }
     },
-    "database": {
-        "my_awesome_redis": {
-            "type": "redis",
-            "hosts": ["https://s3.example.com"],
-            "username_env": "",
-            "password_env": ""
-        }
-    },
     "modes": {
-        "test": {},
         "default": {
             "type": "video",
             "storage_reference": {
-                "id": "upload_server",
+                "id": "awesome_bucket",
                 "path": "/%asset_id%"
             },
             "authentication_reference": {
                 "id": "my_awesome_auth_server"
-            },
-            "database_reference111111": {
-                "id": "my_awesome_redis"
             },
             "status": {
                 "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"

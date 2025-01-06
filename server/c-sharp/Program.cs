@@ -116,7 +116,7 @@ try {
 
     ConnectionMultiplexer conn_redis = null;
     IDatabase redis = null;
-    if ((config.mode.database != null && config.mode.database.type == "redis") || (config.mode.authentication != null && config.mode.authentication.type == "redis")) {
+    if ((config.mode.database != null && config.mode.database.type == "redis") && (config.mode.authentication != null && config.mode.authentication.type == "redis")) {
         conn_redis = ConnectionMultiplexer.Connect(
         new ConfigurationOptions{
             EndPoints = { config.mode.database.hosts[0] },

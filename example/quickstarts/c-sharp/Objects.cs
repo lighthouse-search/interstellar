@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Net;
 
-namespace Interstellar
+namespace External_server
 {
     public class Objects
     {
