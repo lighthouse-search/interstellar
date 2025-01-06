@@ -29,7 +29,8 @@ curl -X POST https://127.0.0.1:4455/chunk-authorisation \
   "mode": "default",
   "asset_id": [current_asset_id],
   "size": [size of incoming chunk],
-  "chunk": [order of incoming chunk]
+  "chunk": [order of incoming chunk],
+  "authorisation": [token/jwt]
 }'
 ```
 
@@ -39,6 +40,7 @@ curl -X POST https://127.0.0.1:4455/chunk-authorisation \
 | mode | string || | The mode the client is attempting to use for the transfer. |
 | size | int || | Size of the uploaded chunk (in bytes). As chunk authorisation come in, you need to increment this size in your database to ensure the client does not exceed the permissable filesize of the total file. |
 | chunk | int || | Order of the chunk. Interstellar numbers chunks as data will not get sent linearly during multi-threaded uploads. Interstellar needs to know the original order of the chunks so it can reconstruct the file without corruption. You don't need to (and probably shouldn't) handle this data, ``size`` is much more important.|
+| authorisation | string[] || | (optional): An authorisation string (e.g JWT, Token) passed by the client to authenticate the transfer. |
 
 ## What's expected of you.
 ### 200 status
