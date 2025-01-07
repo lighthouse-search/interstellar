@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "HFROPTHdImuJ9I9VuliwaoQVU2GJLocpgfWP/rS5oDU=",
+  "Source": "csharp-external-server",
+  "BasePath": "_content/csharp-external-server",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

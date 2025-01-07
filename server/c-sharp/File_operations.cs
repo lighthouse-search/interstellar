@@ -8,120 +8,68 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Interstellar
 {
     public static class File_operations
     {
         // Process all files in the directory passed in, recurse on any directories that are found, and process the files they contain.
-        public static void ProcessDirectory(string targetDirectory, List<string> list, string video_id)
+        // Warning: I haven't fully tested 'recursive' here.
+        public static void ProcessDirectory(string target_directory, string base_directory, List<Objects.files_in_directory> list, bool recursive)
         {
             // Process the list of files found in the directory.
-            string [] fileEntries = Directory.GetFiles(targetDirectory);
+            string [] fileEntries = Directory.GetFiles(target_directory);
             foreach(string fileName in fileEntries)
-                ProcessFile(fileName, list, video_id);
+                ProcessFile(fileName, base_directory, list);
 
             // Recurse into subdirectories of this directory.
-            string [] subdirectoryEntries = Directory.GetDirectories(targetDirectory);
-            foreach(string subdirectory in subdirectoryEntries)
-                ProcessDirectory(subdirectory, list, video_id);
+            if (recursive == true) {
+                string [] subdirectoryEntries = Directory.GetDirectories(target_directory);
+                foreach(string subdirectory in subdirectoryEntries)
+                    ProcessDirectory(subdirectory, base_directory, list, true); // 'recursive' is always true here, as the original param was recursive. This would only be false in the future if there was a limit on recursiveness, e.g. only going 1 directory deep.
+            }
         }
 
         // Insert logic for processing found files here.
-        public static string ProcessFile(string path, List<string> list, string video_id)
+        public static string ProcessFile(string file_path, string base_directory, List<Objects.files_in_directory> list)
         {
-            Console.WriteLine("Processed file '{0}'.", path);
-            list.Add(path.Replace($"/tmp/user_ingest_reencoded/{video_id}/", "").Replace(".tmp", ""));
-            return path;
-        }
-
-        public static T MergeObjects<T>(T target, T source)
-        {
-            Type targetType = typeof(T);
-            PropertyInfo[] properties = targetType.GetProperties();
-
-            foreach (PropertyInfo property in properties)
-            {
-                object sourceValue = property.GetValue(source, null);
-                if (sourceValue != null)
-                {
-                    property.SetValue(target, sourceValue, null);
-                }
+            string cropped_path = file_path.Replace(base_directory, "");
+            if (cropped_path.StartsWith('/')) {
+                cropped_path = cropped_path.TrimStart('/');
             }
 
-            return target;
-        }
-
-        public static void CopyValues<T> (T target, T source)
-        {
-            Type t = typeof (T);
-            var properties = t.GetProperties ().Where (prop => prop.CanRead && prop.CanWrite);
-            foreach (var prop in properties)
-            {
-                var value = prop.GetValue (source, null);
-                if (value != null)
-                    prop.SetValue (target, value, null);
-            }
-        }
-
-        public static bool DeleteDirectory(string dirPath) {
-            bool deleted = false;
-            while (!deleted)
-            {
-                try
-                {
-                    Directory.Delete(dirPath, true);
-                    deleted = true;
-                }
-                catch (IOException)
-                {
-                    // Wait for 100 milliseconds and try again
-                    Thread.Sleep(100);
-                }
-            }
-
-            return true;
-        }
-
-        public static async Task<string> GetWhisperSubtitles(string AudioFilePath, string SrtFilePath)
-        {
-            if (AudioFilePath == null || SrtFilePath == null) {
-                throw new Exception("Missing critical data.");
-            }
+            list.Add(new Objects.files_in_directory {
+                file_name = Path.GetFileName(file_path),
+                cropped_path = cropped_path,
+                full_path = file_path
+            });
             
-            // Create an HttpClient with the API key as authorization header
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Environment.GetEnvironmentVariable("whisper_api_key").ToString()); // Replace "TOKEN" with your actual API token
-
-            // Create a multipart/form-data request with the audio file as content
-            using var content = new MultipartFormDataContent();
-            using var fileStream = File.OpenRead(AudioFilePath);
-            content.Add(new StreamContent(fileStream), "file", Path.GetFileName(AudioFilePath));
-            content.Add(new StringContent("whisper-1"), "model");
-
-            // Send a POST request to the Whisper endpoint
-            var requestUrl = "https://api.openai.com/v1/audio/transcriptions";
-            var response = await client.PostAsync(requestUrl, content);
-
-            // Check if the request was successful
-            if (response.IsSuccessStatusCode)
-            {
-                // Read the response content as a string
-                var result = await response.Content.ReadAsStringAsync();
-
-                // Write the result to the output SRT file
-                File.WriteAllText(SrtFilePath, result);
-
-                Console.WriteLine("SRT file generated successfully.");
-                return result;
-            }
-            else
-            {
-                // Handle error
-                Console.WriteLine($"Request failed: {response.ReasonPhrase}");
-                return null;
-            }
+            return file_path; // this probably doesn't need to be here.
         }
 
+        public static List<Objects.files_in_directory> Get_files_in_directory(string[] base_paths, bool recursive)
+        {
+            List<Objects.files_in_directory> files_list = new List<Objects.files_in_directory>();
+            foreach(string base_path in base_paths)
+            {
+                if (File.Exists(base_path))
+                {
+                    // This path is a file
+                    File_operations.ProcessFile(base_path, base_path, files_list);
+                }
+                else if (Directory.Exists(base_path))
+                {
+                    // This path is a directory
+                    File_operations.ProcessDirectory(base_path, base_path, files_list, recursive);
+                }
+                else
+                {
+                    Console.WriteLine("{0} is not a valid file or directory.", base_path);
+                }
+            }
+
+            return files_list;
+        }
     }
 }

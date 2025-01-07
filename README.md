@@ -1,8 +1,22 @@
-☄️ Interstellar Video
+☄️ Interstellar
 ==============
 
-Interstellar ("between stars") video is a very efficient video protocol.
+Interstellar ("between stars") is an efficient transfer protocol.
 
-Server implementations:
-- [C#](https://example.com)
+**Configurations**
+- [Video](/example/config/video.md)
+- [File transfer](/example/config/file-transfer.md)
+
+**Quickstarts**
+
+External authentication/storage server + Interstellar configuration, ready to go.
+- [Rust](/example/quickstarts/rust/README.md)
+- [C#](/example/quickstarts/c-sharp/README.md)
+- [Typescript](//example/quickstarts/typescript/README.md)
+
+**Server implementations**
+- [C#](/server/c-sharp/)
 - More soon!
+
+**TODO:**
+- 

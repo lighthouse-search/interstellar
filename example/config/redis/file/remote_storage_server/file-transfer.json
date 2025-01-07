@@ -1,0 +1,53 @@
+{
+    "request": {
+        "limit": {
+            "max_request_body_size": 45000000,
+            "keep_alive_timeout_from_minutes": 60
+        },
+        "cors": {
+            "allowed_origins": [
+                "http://127.0.0.1:3001"
+            ]
+        }
+    },
+    "storage": {
+        "upload_server": {
+            "type": "remote_server",
+            "get_upload_urls": "http://127.0.0.1:4455/api/internal/video/get-upload-urls"
+        }
+    },
+    "authentication": {
+        "my_awesome_auth_server": {
+            "type": "remote_server",
+            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk/authorisation"
+        }
+    },
+    "modes": {
+        "default": {
+            "type": "file",
+            "storage_reference": {
+                "id": "upload_server",
+                "path": "/%asset_id%"
+            },
+            "authentication_reference": {
+                "id": "my_awesome_auth_server"
+            },
+            "status": {
+                "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
+            },
+            "features": {
+                "file_types": [
+                ],
+                "file_alias": {
+                }
+            },
+            "video_limits": {
+            },
+            "post_processing": {
+            }
+        }
+    },
+    "message": {
+        "fatal_error": "Sorry, there was an error."
+    }
+}

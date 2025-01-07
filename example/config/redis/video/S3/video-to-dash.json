@@ -1,0 +1,148 @@
+{
+    "request": {
+        "limit": {
+            "max_request_body_size": 45000000,
+            "keep_alive_timeout_from_minutes": 60
+        },
+        "cors": {
+            "allowed_origins": [
+                "http://127.0.0.1:3001"
+            ]
+        }
+    },
+    "storage": {
+        "awesome_bucket": {
+            "type": "s3",
+            "host": "https://s3.example.com",
+            "bucket_name": "your_s3_bucket_name",
+            "access_key_env": "",
+            "secret_access_key_env": "",
+            "region": "auto"
+        }
+    },
+    "authentication": {
+        "my_awesome_auth_server": {
+            "type": "remote_server",
+            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk/authorisation"
+        }
+    },
+    "modes": {
+        "default": {
+            "type": "video",
+            "storage_reference": {
+                "id": "awesome_bucket",
+                "path": "/%asset_id%"
+            },
+            "authentication_reference": {
+                "id": "my_awesome_auth_server"
+            },
+            "status": {
+                "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
+            },
+            "features": {
+                "file_types": [
+                    "mp4",
+                    "mkv",
+                    "mov",
+                    "flv",
+                    "xflv",
+                    "webm",
+                    "avi",
+                    "x-matroska",
+                    "xmatroska",
+                    "quicktime"
+                ],
+                "file_alias": {
+                    "x-matroska": "mkv"
+                }
+            },
+            "video_limits": {
+                "min": {
+                    "stream": {
+                        "width": 256,
+                        "height": 144,
+                        "duration": 1,
+                        "size": 1,
+                        "bit_rate": 0
+                    },
+                    "format": {
+                        "probe_score": 98
+                    }
+                },
+                "max": {
+                    "video_streams": 1,
+                    "audio_streams": -1,
+                    "stream": {
+                        "width": 3840,
+                        "height": 2160
+                    },
+                    "format": {
+                        "size": 5000000000,
+                        "bit_rate": 600000000,
+                        "nb_streams": 10000
+                    }
+                },
+                "must_be": {
+                    
+                },
+                "must_not_be": {
+
+                },
+                "includes": {
+
+                },
+                "does_not_include": {
+
+                }
+            },
+            "post_processing": {
+                "commands": {
+                    "validation": [
+                        {
+                            "program": "ffprobe",
+                            "commands": [
+                                "-v quiet -print_format json -show_format -show_streams /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type%"
+                            ]
+                        }
+                    ],
+                    "processing": [
+                        {
+                            "program": "ffmpeg",
+                            "commands": [
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.%file_type% -vcodec libx264 -maxrate 400k -crf 28 -filter:v fps=60 /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi -y -preset medium -progress pipe:1"
+                            ]
+                        },
+                        {
+                            "program": "ffmpeg",
+                            "commands": [
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
+                                "-map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0",
+                                "-vf \"scale=-2:144\" -c:v libx264 -crf 28 -profile:v baseline -b:v:0 250k",
+                                "-vf \"scale=-2:240\" -c:v libx264 -crf 28 -profile:v baseline -b:v:1 500k",
+                                "-vf \"scale=-2:360\" -c:v libx264 -crf 28 -profile:v main -b:v:2 750k",
+                                "-vf \"scale=-2:480\" -c:v libx264 -crf 28 -profile:v main -b:v:3 1000k",
+                                "-vf \"scale=-2:720\" -c:v libx264 -crf 28 -profile:v high -b:v:4 1500k",
+                                "-vf \"scale=-2:1080\" -c:v libx264 -crf 28 -profile:v high -b:v:5 2500k",
+                                "-f dash /tmp/user_ingest_reencoded/%asset_id%/video.mpd -y -preset medium"
+                            ]
+                        },
+                        {
+                            "program": "ffmpeg",
+                            "commands":
+                            [
+                                "-i /tmp/user_ingest_before_reencoding/%asset_id%/%asset_id%.avi",
+                                "-preset veryfast",
+                                "-vf \"scale=-1:480\"",
+                                "-frames:v 1",
+                                "/tmp/user_ingest_reencoded/%asset_id%/auto_generated_thumbnail.jpeg"
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "message": {
+        "fatal_error": "Sorry, there was an error."
+    }
+}

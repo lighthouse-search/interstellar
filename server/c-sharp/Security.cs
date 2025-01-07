@@ -14,6 +14,7 @@ namespace Interstellar
     public class Security {
         public static string file_name_sanitize(string i_input)
         {
+            // TODO: fix bcs regex with no timeout is blowdart horror
             if (String.IsNullOrWhiteSpace(i_input)) {
                 return null;
             }

@@ -2,3 +2,4 @@
 /server/c-sharp/obj
 
 .DS_Store
+/client/nextjs-site
