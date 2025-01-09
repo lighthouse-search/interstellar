@@ -1,25 +1,25 @@
 {
     "request": {
         "limit": {
-            "max_request_body_size": 45000000,
+            "max_request_body_size": 200000000,
             "keep_alive_timeout_from_minutes": 60
         },
         "cors": {
             "allowed_origins": [
-                "http://127.0.0.1:3001"
+                "http://127.0.0.1:3020"
             ]
         }
     },
     "storage": {
         "upload_server": {
             "type": "remote_server",
-            "get_upload_urls": "http://127.0.0.1:4455/api/internal/video/get-upload-urls"
+            "get_upload_urls": "http://127.0.0.1:8001/get-upload-urls"
         }
     },
     "authentication": {
         "my_awesome_auth_server": {
             "type": "remote_server",
-            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk/authorisation"
+            "chunk_authorisation": "http://127.0.0.1:8001/chunk/authorisation"
         }
     },
     "modes": {
@@ -33,7 +33,7 @@
                 "id": "my_awesome_auth_server"
             },
             "status": {
-                "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
+                "status_update": "http://127.0.0.1:8001/status/update"
             },
             "features": {
                 "file_types": [

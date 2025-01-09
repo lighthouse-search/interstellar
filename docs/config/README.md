@@ -60,7 +60,7 @@ Configuration
     "storage": {
         "upload_server": {
             "type": "remote_server",
-            "get_upload_urls": "http://127.0.0.1:4455/api/internal/video/get-upload-urls"
+            "get_upload_urls": "https://127.0.0.1:8000/get-upload-urls"
         }
     },
 }
@@ -77,7 +77,7 @@ Configuration
     "authentication": {
         "my_awesome_auth_server": {
             "type": "remote_server",
-            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk/authorisation"
+            "chunk_authorisation": "https://127.0.0.1:8000/chunk/authorisation"
         }
     },
 }
@@ -124,7 +124,7 @@ Configuration
                 "id": "my_awesome_redis"
             },
             "status": {
-                "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
+                "status_update": "https://127.0.0.1:8000/status/update"
             },
             "features": {
                 "file_types": [

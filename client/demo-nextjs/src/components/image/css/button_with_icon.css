@@ -1,0 +1,17 @@
+.button_with_icon {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 4px;
+    /* width: 100%; */
+}
+
+.button_with_icon img {
+    width: 20px;
+    height: 20px;
+}
+
+.button_with_icon_link {
+    /* width: 100%; */
+    text-decoration: none;
+}

@@ -1,0 +1,22 @@
+.input_row_header {
+    display: flex;
+    flex-direction: column;
+    row-gap: 2px;
+}
+
+.input_row_header_topbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    /* justify-content: space-between; */
+    column-gap: 4px;
+    width: 100%;
+}
+
+.input_row_header_header {
+    font-size: 15px;
+}
+
+.input_row_header_description {
+    font-size: 13px;
+}

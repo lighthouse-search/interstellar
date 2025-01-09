@@ -1,0 +1,21 @@
+.grid1 {
+    position: relative;
+    display: grid;
+    align-items: center;
+    
+    padding-left: 0px;
+    padding-bottom: 10px;
+    column-gap: 6px;
+    row-gap: 10px;
+    height: 100%;
+
+    grid-template-columns: repeat(auto-fit, minmax(286px, 1fr));
+    overflow-y: scroll;
+}
+
+.wrapper {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    grid-auto-rows: minmax(100px, auto);
+}

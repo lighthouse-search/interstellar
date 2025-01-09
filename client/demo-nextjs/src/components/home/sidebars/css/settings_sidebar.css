@@ -1,0 +1,21 @@
+.settings_sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    height: 100%;
+    row-gap: 4px;
+    /* padding-left: 4px; */
+}
+
+.settings_sidebar button {
+    border-radius: 0px;
+}
+
+.settings_sidebar button:not(:hover) {
+    background-color: transparent;
+}
+
+.seperator {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}

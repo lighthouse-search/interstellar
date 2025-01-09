@@ -16,16 +16,16 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
     policy  =>
     {
-        policy.WithOrigins("example.com")
+        policy.WithOrigins("http://127.0.0.1:3020")
         .AllowAnyHeader()
         .AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
-// app.UseCors(MyAllowSpecificOrigins);
+app.UseCors(MyAllowSpecificOrigins);
 app.UseExceptionHandler("/Error");
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseCors();
 app.UseRouting();
 
@@ -36,16 +36,53 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-string connectionString = "Server=localhost;Database=interstellar_test;User=example-user;Password=my_cool_secret;";
-MySqlConnection connection = new MySqlConnection(connectionString);
-
 app.MapGet("/error", async (HttpContext context) => {
-    await Responses.error(context, 500, "Something went wrong.");
+    await Responses.error(context, null, 500, "Something went wrong.");
+});
+
+app.MapPost("/get-asset-id", async (HttpContext context) => {
+    MySqlConnection connection = await Sql.get_connection();
+try {
+    Console.WriteLine("/get-asset-id");
+
+    using var body_reader = new StreamReader(context.Request.Body);
+    var request_body = await body_reader.ReadToEndAsync();
+
+    Objects.request_body_get_asset_id body = JsonConvert.DeserializeObject<Objects.request_body_get_asset_id>(request_body);
+    long size = body.size;
+    if (size == -1) {
+        await Responses.error(context, connection, 400, "body.size is null or whitespace.");
+        return;
+    }
+
+    long unixTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    Random random = new Random();
+    int randomNumber = random.Next(1000, 9999);
+    string asset_id = $"{unixTimestamp}{randomNumber}";
+
+    string query = "INSERT INTO videos (asset_id, bytes_max) VALUES (@asset_id, @bytes_max)";
+    MySqlCommand command = new MySqlCommand(query, connection);
+    command.Parameters.AddWithValue("asset_id", asset_id);
+    command.Parameters.AddWithValue("bytes_max", size);
+    await Sql.query(command);
+    
+    await Responses.handle(context, connection, 200, new Objects.response_body_get_asset_id {
+        asset_id = asset_id
+    });
+} catch (WebException ex)
+{
+    Console.WriteLine("BAD ERROR");
+    Console.WriteLine(ex);
+    Console.WriteLine("BAD ERROR");
+    await Responses.error(context, connection, 500, "Something went wrong.");
+}
 });
 
 app.MapPost("/chunk/authorisation", async (HttpContext context) => {
+    MySqlConnection connection = await Sql.get_connection();
 try {
-    await connection.OpenAsync();
+    Console.WriteLine("/chunk/authorisation");
+
     using var body_reader = new StreamReader(context.Request.Body);
     var request_body = await body_reader.ReadToEndAsync();
 
@@ -53,27 +90,27 @@ try {
 
     string asset_id = body.asset_id;
     if (String.IsNullOrWhiteSpace(asset_id)) {
-        await Responses.error(context, 400, "body.asset_id is null or whitespace.");
+        await Responses.error(context, connection, 400, "body.asset_id is null or whitespace.");
         return;
     }
-    string mode = body.mode;
-    if (String.IsNullOrWhiteSpace(mode)) {
-        await Responses.error(context, 400, "body.mode is null or whitespace.");
-        return;
-    }
+    string mode = body.mode != null ? body.mode : "default";
+    // if (String.IsNullOrWhiteSpace(mode)) {
+    //     await Responses.error(context, connection, 400, "body.mode is null or whitespace.");
+    //     return;
+    // }
     long size = body.size;
     if (size == -1) {
-        await Responses.error(context, 400, "body.size is null or whitespace.");
+        await Responses.error(context, connection, 400, "body.size is null or whitespace.");
         return;
     }
     long chunk = body.chunk;
     if (chunk == -1) {
-        await Responses.error(context, 400, "body.chunk is null or whitespace.");
+        await Responses.error(context, connection, 400, "body.chunk is null or whitespace.");
         return;
     }
     // string authorisation = body.authorisation.ToString();
     // if (String.IsNullOrWhiteSpace(authorisation)) {
-    //     return Responses.error(context, 400, "body.authorisation is null or whitespace.");
+    //     return Responses.error(context, connection, 400, "body.authorisation is null or whitespace.");
     // }
     
     string query = "SELECT asset_id, status, bytes_uploaded, bytes_max FROM videos WHERE asset_id=@asset_id";
@@ -81,7 +118,8 @@ try {
     command.Parameters.AddWithValue("asset_id", asset_id);
     MySqlDataReader reader = await Sql.query(command);
     if (reader == null) {
-        await Responses.error(context, 500, "asset_id is invalid.");
+        await Responses.error(context, connection, 500, "asset_id is invalid.");
+        return;
     }
     Console.WriteLine($"ID: {reader["asset_id"]} {reader["status"]} {reader["bytes_uploaded"]} {reader["bytes_max"]}");
 
@@ -96,7 +134,7 @@ try {
 
     await reader.CloseAsync();
 
-    if (uploaded > size || uploaded+size > size) {
+    if (uploaded > max_size || uploaded+size > max_size) {
     } else {
         MySqlCommand update_bytes = new MySqlCommand("UPDATE videos SET bytes_uploaded=@bytes_uploaded WHERE asset_id=@asset_id", connection);
         update_bytes.Parameters.AddWithValue("bytes_uploaded", uploaded+size);
@@ -104,8 +142,7 @@ try {
         await Sql.query(update_bytes);
     }
 
-    await connection.CloseAsync();
-    await Responses.handle(context, 200, new Objects.response_body_chunk_authorisation {
+    await Responses.handle(context, connection, 200, new Objects.response_body_chunk_authorisation {
         asset_id = asset_id,
         uploaded = uploaded,
         max_size = max_size
@@ -115,11 +152,12 @@ try {
     Console.WriteLine("BAD ERROR");
     Console.WriteLine(ex);
     Console.WriteLine("BAD ERROR");
-    await Responses.error(context, 500, "Something went wrong.");
+    await Responses.error(context, connection, 500, "Something went wrong.");
 }
 });
 
 app.MapPost("/get-upload-urls", async (HttpContext context) => {
+    MySqlConnection connection = await Sql.get_connection();
 try {
     using var body_reader = new StreamReader(context.Request.Body);
     var request_body = await body_reader.ReadToEndAsync();
@@ -128,30 +166,32 @@ try {
 
     string asset_id = body.asset_id;
     if (String.IsNullOrWhiteSpace(asset_id)) {
-        await Responses.error(context, 400, "body.asset_id is null or whitespace.");
+        await Responses.error(context, connection, 400, "body.asset_id is null or whitespace.");
         return;
     }
     string authorisation = body.authorisation.ToString();
     if (String.IsNullOrWhiteSpace(authorisation)) {
-        await Responses.error(context, 400, "body.authorisation is null or whitespace.");
+        await Responses.error(context, connection, 400, "body.authorisation is null or whitespace.");
         return;
     }
 
     List<S3.ObjectKey_URL> presigned_urls = S3.Generate_Presigned_URL(asset_id, S3.Get_S3_client(), Environment.GetEnvironmentVariable("s3_bucket"), body.object_keys);
-    await Responses.handle(context, 200, new Objects.response_body_get_upload_urls {
+    await Responses.handle(context, connection, 200, new Objects.response_body_get_upload_urls {
         asset_id = asset_id,
         object_keys = presigned_urls
     });
 } catch (WebException ex)
 {
     Console.WriteLine(ex);
-    await Responses.error(context, 500, "Something went wrong.");
+    await Responses.error(context, connection, 500, "Something went wrong.");
 }
 });
 
 app.MapPost("/status/update", async (HttpContext context) => {
+    MySqlConnection connection = await Sql.get_connection();
 try {
-    await connection.OpenAsync();
+    Console.WriteLine("/status/update");
+
     using var body_reader = new StreamReader(context.Request.Body);
     var request_body = await body_reader.ReadToEndAsync();
 
@@ -159,27 +199,15 @@ try {
 
     string asset_id = body.asset_id;
     if (String.IsNullOrWhiteSpace(asset_id)) {
-        await Responses.error(context, 400, "body.asset_id is null or whitespace.");
+        await Responses.error(context, connection, 400, "body.asset_id is null or whitespace.");
         return;
     }
     string section = body.section;
-    if (String.IsNullOrWhiteSpace(section)) {
-        await Responses.error(context, 400, "body.section is null or whitespace.");
-        return;
-    }
     long stage = body.stage;
-    if (stage == -1) {
-        await Responses.error(context, 400, "body.stage is null or whitespace.");
-        return;
-    }
     long out_of = body.out_of;
-    if (out_of == -1) {
-        await Responses.error(context, 400, "body.out_of is null or whitespace.");
-        return;
-    }
     // string authorisation = body.authorisation.ToString();
     // if (String.IsNullOrWhiteSpace(authorisation)) {
-    //     return Responses.error(context, 400, "body.authorisation is null or whitespace.");
+    //     return Responses.error(context, connection, 400, "body.authorisation is null or whitespace.");
     // }
 
     MySqlCommand update_bytes = new MySqlCommand("UPDATE videos SET section=@section, stage=@stage, out_of=@out_of WHERE asset_id=@asset_id", connection);
@@ -189,11 +217,11 @@ try {
     update_bytes.Parameters.AddWithValue("asset_id", asset_id);
     await Sql.query(update_bytes);
 
-    await Responses.handle(context, 200, null);
+    await Responses.handle(context, connection, 200, null);
 } catch (WebException ex)
 {
     Console.WriteLine(ex);
-    await Responses.error(context, 500, "Something went wrong.");
+    await Responses.error(context, connection, 500, "Something went wrong.");
 }
 });
 

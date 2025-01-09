@@ -1,0 +1,22 @@
+.phases_frame {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+
+    width: 380px;
+    /* height: 480px; */
+
+    border-radius: 4px;
+
+    row-gap: 8px;
+}
+
+.top img {
+    width: 35px;
+    height: 35px;
+}
+
+.top p {
+    font-weight: bold;
+    font-size: 20px;
+}

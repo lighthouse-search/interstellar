@@ -8,8 +8,8 @@ namespace Interstellar
     {
         public static async Task<Objects.Authentication_initalise> initalise(HttpContext context, Objects.Config config, IDatabase redis, string mode, string asset_id, long file_size, long chunk)
         {
-            string storage_type = config.mode.storage.type.ToLower();
-            if (storage_type == "remote_server") {
+            string authentication_type = config.mode.authentication.type.ToLower();
+            if (authentication_type == "remote_server") {
                 Objects.chunkAuthorization chunk_authorisation = await Authentication.chunk_authorisation(config, mode, asset_id, file_size, chunk);
 
                 // External server didn't like that.
@@ -24,7 +24,7 @@ namespace Interstellar
                     already_uplodaded = chunk_authorisation.uploaded,
                     max_size = chunk_authorisation.max_size
                 };
-            } else if (storage_type == "redis") {
+            } else if (authentication_type == "redis") {
                 if (redis != null) {
                     new Exception("Missing redis connection (If you're seeing this, you should file a bug report).");
                 }
@@ -47,6 +47,9 @@ namespace Interstellar
 
         public static async Task clock_in(Objects.Config config, IDatabase redis, string asset_id, long already_uploaded, long max_size)
         {
+            if (config.mode.storage == null) {
+                throw new Exception("Configuration is not using storage, yet there is an issue with Interstellar code that is attempting to do storage-related things. Please file a bug report.");
+            }
             string storage_type = config.mode.storage.type.ToLower();
             if (storage_type == "remote_server") {
                 // We don't need to do anything.

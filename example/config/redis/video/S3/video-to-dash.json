@@ -23,7 +23,7 @@
     "authentication": {
         "my_awesome_auth_server": {
             "type": "remote_server",
-            "chunk_authorisation": "http://127.0.0.1:4455/api/internal/video/chunk/authorisation"
+            "chunk_authorisation": "https://127.0.0.1:8000/chunk/authorisation"
         }
     },
     "modes": {
@@ -37,7 +37,7 @@
                 "id": "my_awesome_auth_server"
             },
             "status": {
-                "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
+                "status_update": "https://127.0.0.1:8000/status/update"
             },
             "features": {
                 "file_types": [

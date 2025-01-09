@@ -1,11 +1,12 @@
 {
   "Version": 1,
-  "Hash": "HFROPTHdImuJ9I9VuliwaoQVU2GJLocpgfWP/rS5oDU=",
+  "Hash": "hZep15uWRCs4KgdAfviuebjLGqNPFgpr3dpu2PVHfFk=",
   "Source": "csharp-external-server",
   "BasePath": "_content/csharp-external-server",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
   "DiscoveryPatterns": [],
-  "Assets": []
+  "Assets": [],
+  "Endpoints": []
 }

@@ -5,6 +5,9 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE:latest
 
+include:
+  - local: client/demo-nextjs/.gitlab-ci.yml
+
 build:
   image: docker:cli
   stage: build

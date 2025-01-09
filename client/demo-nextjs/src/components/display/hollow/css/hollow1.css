@@ -1,0 +1,19 @@
+.hollow1 {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+}
+
+.hollow1_topbar {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 5px;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+}
+
+.hollow1_topbar_header {
+    font-weight: bold;
+}

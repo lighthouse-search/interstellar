@@ -8,6 +8,11 @@ namespace Interstellar
     {
         public static async Task update(Objects.Config config, string asset_id, string type, string section, long stage, long out_of, Objects.Status_update_body_video video)
         {
+            if (config.mode.status == null || config.mode.status.status_update == null) {
+                Console.WriteLine("Skipping config.mode.status.status_update, unset.");
+                return;
+            }
+            
             try {
                 await Https.Request_POST(
                     config.mode.status.status_update,

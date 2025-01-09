@@ -8,6 +8,13 @@ namespace External_server
 {
     public static class Sql
     {
+        public static async Task<MySqlConnection> get_connection()
+        {
+            string connectionString = "Server=localhost;Database=interstellar_test;User=example-user;Password=my_cool_secret;";
+            MySqlConnection connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+            return connection;
+        }
         public static async Task<MySqlDataReader> query(MySqlCommand command)
         {
             MySqlDataReader output = null;
@@ -17,7 +24,12 @@ namespace External_server
                 output = reader;
             }
 
-            return output;
+            if (output != null) {
+                return output;
+            } else {
+                await reader.CloseAsync();
+                return null;
+            }
         }
     }
 }

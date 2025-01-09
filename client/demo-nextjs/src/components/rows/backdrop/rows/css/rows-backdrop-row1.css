@@ -1,0 +1,54 @@
+.Rows_backdrop_row1 {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.Rows_backdrop_row1 {
+    text-decoration: none;
+}
+
+.Rows_backdrop_row1 button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 6px;
+    padding-right: 6px;
+    width: 100%;
+}
+
+.Rows_backdrop_row1_left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 6px;
+}
+
+.Rows_backdrop_row1_left_icon {
+    width: 30px;
+    height: 30px;
+}
+
+.Rows_backdrop_row1_right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    z-index: 2;
+}
+
+.Rows_backdrop_row1_right button {
+    padding: 4px;
+}
+
+.Rows_backdrop_row1_left_content {
+    text-align: start;
+}
+
+.Rows_backdrop_row1_left_content_header {
+    font-size: 14px;
+}
+
+.Rows_backdrop_row1_left_content_subtext {
+    font-size: 12px;
+}

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "OnMttO/r5+U=",
+  "dgSpecHash": "mXdhSjog24A=",
   "success": true,
   "projectFilePath": "/Users/josh/Documents/GitHub/Interstellar-video/example/quickstarts/c-sharp/csharp-external-server.csproj",
   "expectedPackageFiles": [
@@ -35,7 +35,10 @@
     "/Users/josh/.nuget/packages/system.threading.tasks/4.3.0/system.threading.tasks.4.3.0.nupkg.sha512",
     "/Users/josh/.nuget/packages/system.threading.tasks.extensions/4.5.4/system.threading.tasks.extensions.4.5.4.nupkg.sha512",
     "/Users/josh/.nuget/packages/system.windows.extensions/8.0.0/system.windows.extensions.8.0.0.nupkg.sha512",
-    "/Users/josh/.nuget/packages/zstdsharp.port/0.8.0/zstdsharp.port.0.8.0.nupkg.sha512"
+    "/Users/josh/.nuget/packages/zstdsharp.port/0.8.0/zstdsharp.port.0.8.0.nupkg.sha512",
+    "/Users/josh/.nuget/packages/microsoft.netcore.app.ref/8.0.11/microsoft.netcore.app.ref.8.0.11.nupkg.sha512",
+    "/Users/josh/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.11/microsoft.aspnetcore.app.ref.8.0.11.nupkg.sha512",
+    "/Users/josh/.nuget/packages/microsoft.netcore.app.host.osx-arm64/8.0.11/microsoft.netcore.app.host.osx-arm64.8.0.11.nupkg.sha512"
   ],
   "logs": []
 }
