@@ -1,0 +1,21 @@
+.Switch_with_text {
+    display: flex;
+    flex-direction: column;
+    row-gap: 2px;
+}
+
+.Switch_with_text_topbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 4px;
+}
+
+.Switch_with_text_header {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.Switch_with_text_description {
+    font-size: 13px;
+}

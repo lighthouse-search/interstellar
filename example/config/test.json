@@ -1,0 +1,43 @@
+{
+    "request": {
+        "limit": {
+            "max_request_body_size": 200000000,
+            "keep_alive_timeout_from_minutes": 60
+        },
+        "cors": {
+            "allowed_origins": [
+                "http://127.0.0.1:3020"
+            ]
+        }
+    },
+    "authentication": {
+        "my_awesome_auth_server": {
+            "type": "remote_server",
+            "chunk_authorisation": "http://127.0.0.1:8001/chunk/authorisation"
+        }
+    },
+    "modes": {
+        "default": {
+            "type": "video",
+            "authentication_reference": {
+                "id": "my_awesome_auth_server"
+            },
+            "status": {
+                "status_update": "http://127.0.0.1:8001/status/update"
+            },
+            "features": {
+                "file_types": [
+                ],
+                "file_alias": {
+                    "x-matroska": "mkv"
+                },
+                "chunks": {
+                    "save_to_disk": false
+                }
+            }
+        }
+    },
+    "message": {
+        "fatal_error": "Sorry, there was an error."
+    }
+}

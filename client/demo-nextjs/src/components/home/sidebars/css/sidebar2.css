@@ -1,0 +1,97 @@
+.sidebar2 {
+    display: flex;
+    flex-direction: row;
+    height: 40px;
+
+    align-items: center;
+    justify-content: space-between;
+    /* background-color: #272525; */
+    row-gap: 8px;
+    padding: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.sidebar2 .search {
+    width: 400px;
+}
+
+.sidebar2_frames {
+    display: flex;
+    flex-direction: row;
+    column-gap: 8px;
+    align-items: center;
+}
+
+.sidebar_mfns_logo {
+    width: 35px;
+    height: 35px;
+}
+
+.sidebar-bottom {
+    display: flex;
+    flex-direction: row;
+    column-gap: 12px;
+}
+
+.sidebar-bottom img:not(.profile_pic img) {
+    background-color: inherit;
+    width: 18px;
+    height: 18px;
+}
+
+.sidebar-bottom .sidebar_profile_pic {
+    width: 30px;
+    height: 30px;
+}
+
+.sidebar2_row {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    min-width: 50px;
+    max-width: 100px;
+    height: 98vh;
+    /* background-color: rgb(222, 222, 222); */
+    background-color: #272525;
+    row-gap: 8px;
+
+    align-items: center;
+    justify-content: space-between;
+    /* justify-content: center; */
+    padding-top: 8px;
+    padding-bottom: 8px;
+    
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.sidebar2_frames_row {
+    display: flex;
+    flex-direction: column;
+    row-gap: 8px;
+    align-items: center;
+}
+
+.sidebar-bottom_row {
+    row-gap: 8px;
+}
+
+.sidebar2 .nameplate_username {
+    max-width: 180px;
+}
+
+.menu_dropdown button {
+    text-align: start;
+    font-size: 15px;
+}
+
+.menu_dropdown .buttons {
+    display: flex;
+    flex-direction: column;
+    row-gap: 6px;
+}
+
+.menu_dropdown .buttons button {
+    padding-left: 6px;
+}

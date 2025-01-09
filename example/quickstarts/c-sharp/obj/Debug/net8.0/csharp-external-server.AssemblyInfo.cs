@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("csharp-external-server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3979007da2cf73dbb23d95280d7c55fc424d7e13")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fa06254724be06bee011ebbcfd662162e808f1f4")]
 [assembly: System.Reflection.AssemblyProductAttribute("csharp-external-server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("csharp-external-server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

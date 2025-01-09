@@ -1,5 +1,14 @@
 /server/c-sharp/bin
 /server/c-sharp/obj
+/server/c-sharp/out
 
 .DS_Store
 /client/nextjs-site
+
+/example/quickstarts/typescript/node_modules
+/client/nextjs-site/node_modules
+/client/demo-nextjs/_static
+/client/demo-nextjs/node_modules
+/client/demo-nextjs/npm/node_modules
+/client/demo-nextjs/public/assets2
+server/c-sharp/dump.rdb

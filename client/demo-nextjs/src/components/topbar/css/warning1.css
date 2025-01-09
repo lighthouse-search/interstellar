@@ -1,0 +1,14 @@
+.warning1 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background-color: black;
+    font-size: 14px;
+}
+
+.warning1_text {
+    font-weight: bold;
+    color: white;
+}

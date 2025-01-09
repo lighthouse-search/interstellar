@@ -8,9 +8,6 @@ using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-// builder.Services.AddSignalR();
 builder.Services.AddCors();
 
 Objects.Config default_config = Config.Get(null);
@@ -41,9 +38,7 @@ builder.Services.AddCors(options =>
 
 
 var app = builder.Build();
-
 app.UseCors(MyAllowSpecificOrigins);
-
 app.Use(async (context, next) =>
 {
     context.Response.OnStarting(() =>
@@ -56,10 +51,10 @@ app.Use(async (context, next) =>
 
     await next();
 });
-
-// Redis.start();
-
 app.UseExceptionHandler("/Error");
+app.UseHttpsRedirection();
+app.UseCors();
+app.UseRouting();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -67,13 +62,6 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
-app.UseHttpsRedirection();
-app.UseStaticFiles(); // TODO: should this be disabled?
-
-app.UseCors();
-
-app.UseRouting();
 
 app.MapGet("/error", async (HttpContext context) => {
     context.Response.StatusCode = 500;
@@ -165,14 +153,14 @@ try {
         file_type = config.mode.features.file_alias[file_type];
     }
     // Overwrites certain file types, e.g converts filetypes like "x-matroska" to proper file extensions like ".mkv" when defined by the administrator.
-    if (config.mode.features.file_types.Contains(file_type) == false) {
+    if (config.mode.features.file_types.Length > 0 && config.mode.features.file_types.Contains(file_type) == false) {
         // bad file_type - make response. Use this as a "glad we found that out before we uploaded it and ran it through FFMPEG". THIS IS JUST WHAT THE CLIENT IS CLAIMING THE file_type IS. DO NOT TREAT THIS VIDEO AS ACTUALLY BEING SPECIFIED file_type.
         context.Response.StatusCode = 400;
-        var json = new JObject
-        {
-            "acceptable_file_types", config.mode.features.file_types
-        };
-        await context.Response.WriteAsJsonAsync(Responses.error($"Unsupported file_type, gave .{file_type}.", json));
+        // var json = new JObject
+        // {
+        //     "acceptable_file_types", config.mode.features.file_types.ToArray()
+        // };
+        await context.Response.WriteAsJsonAsync(Responses.error($"Unsupported file_type, gave .{file_type}."));
         await context.Response.CompleteAsync();
         return;
     }
@@ -206,15 +194,17 @@ try {
 
     // Write incoming chunk to disk.
     // TODO: move this to dedicated function.
-    await using (FileStream aFile = new FileStream($"/tmp/user_ingest_before_reencoding/{asset_id}/chunks/{asset_id}_{chunk}.ingest_chunk", FileMode.Append, FileAccess.Write))
-    await context.Request.Form.Files[0].CopyToAsync(aFile);
+    if (config.mode.features.chunks.save_to_disk == true) {
+        await using (FileStream aFile = new FileStream($"/tmp/user_ingest_before_reencoding/{asset_id}/chunks/{asset_id}_{chunk}.ingest_chunk", FileMode.Append, FileAccess.Write))
+        await context.Request.Form.Files[0].CopyToAsync(aFile);
+    }
 
-    Console.WriteLine("OK WHAT");
-    Console.WriteLine(already_uploaded+file_size);
-    Console.WriteLine(max_size);
+    Console.WriteLine($"already_uploaded: {already_uploaded} || Incoming file size: {file_size} || Now uploaded (already_uploaded+file_size): {already_uploaded+file_size} || max_size: {max_size}");
 
-    // For some storage types (e.g Redis) we need to update variables. This doesn't apply to the "remote_server" storage type.
-    await Authentication.clock_in(config, redis, asset_id, already_uploaded, max_size);
+    if (config.mode.storage != null) {
+        // For some storage types (e.g Redis) we need to update variables. This doesn't apply to the "remote_server" storage type.
+        await Authentication.clock_in(config, redis, asset_id, already_uploaded, max_size);
+    }
 
     // Now that we've written the incoming chunk to disk, we'll check if the video has been uploaded based on the allocated size.
     if (already_uploaded+file_size == max_size) {

@@ -47,7 +47,7 @@
                 "id": "my_awesome_redis"
             },
             "status": {
-                "status_update": "http://127.0.0.1:4455/api/internal/video/status/update"
+                "status_update": "https://127.0.0.1:8000/status/update"
             },
             "features": {
                 "file_types": [

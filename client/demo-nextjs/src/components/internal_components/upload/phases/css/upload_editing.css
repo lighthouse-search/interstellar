@@ -1,0 +1,43 @@
+.upload_editing {
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+    height: 700px;
+}
+
+.upload_editing .content {
+    display: flex;
+    flex-direction: column-reverse;
+    overflow-y: auto;
+    overflow-x: hidden;
+    row-gap: 4px;
+    box-sizing: border-box;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.upload_editing .content select {
+    width: 100%;
+}
+
+.upload_editing .content textarea {
+    width: 100%;
+}
+
+.upload_editing .content input {
+    width: 100%;
+}
+
+.upload_editing .content .thumbnail {
+    width: 320px;
+}
+
+.queue_log {
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding: 2px;
+}
+
+.queue_log .body {
+    font-size: 14px;
+}

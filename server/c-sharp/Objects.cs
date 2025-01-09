@@ -185,6 +185,12 @@ namespace Interstellar
         {
             public string[] file_types { get; set; }
             public Dictionary<string, string> file_alias { get; set; }
+            public Config_features_chunks chunks { get; set; } = new Config_features_chunks();
+        }
+
+        public class Config_features_chunks
+        {
+            public bool save_to_disk { get; set; } = true;
         }
 
         public class Config_storage

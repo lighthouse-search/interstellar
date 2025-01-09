@@ -16,3 +16,5 @@ build:
     - docker buildx create --use
     - docker buildx inspect --bootstrap
     - docker buildx build --file ./server/c-sharp/docker/Dockerfile --push --tag $DOCKER_IMAGE_NAME ./server/c-sharp
+  include:
+    - local: client/demo-nextjs/.gitlab-ci.yml

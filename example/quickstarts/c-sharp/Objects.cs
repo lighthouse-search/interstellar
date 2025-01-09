@@ -43,6 +43,14 @@ namespace External_server
             public string authorisation { get; set; }
         }
 
+        public class request_body_get_asset_id {
+            public long size { get; set; } = -1;
+        }
+
+        public class response_body_get_asset_id {
+            public string asset_id { get; set; }
+        }
+
         public class errorD {
             public bool error { get; set; }
             // public string type { get; set; }
