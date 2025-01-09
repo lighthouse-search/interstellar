@@ -42,8 +42,8 @@ export default function Upload(props) {
         set_queue(quick_v.sort((a, b) => a.chunk - b.chunk));
     }
 
-    function server_url(pathname) {
-        let server_url = new URL(server);
+    function server_url(pathname, address) {
+        let server_url = new URL(address);
         server_url.pathname = pathname;
         return server_url.href;
     }
@@ -64,7 +64,7 @@ export default function Upload(props) {
             chunk: chunk,
             video_hash: hashHex
         }
-        await update_queue({ url: server_url("/upload-chunk"), data: signed_object, chunk });
+        await update_queue({ url: server_url("/upload-chunk", server), data: signed_object, chunk });
 
         // Not included in the JWT, be extremely careful what goes here, as things here can break authentication. The file data is put here because it's too big and instead has a hash that will get verified.
         let formData = new FormData();
@@ -76,7 +76,7 @@ export default function Upload(props) {
             "Authorization": "EXAMPLE_BEARER_TOKEN"
         };
 
-        await fetch(server_url("/upload-chunk"), {
+        await fetch(server_url("/upload-chunk", server), {
             method: 'POST', // *GET, POST, PUT, DELETE, etc.
             mode: 'cors', // no-cors, *cors, same-origin
             cache: 'reload', // *default, no-cache, reload, force-cache, only-if-cached
@@ -177,7 +177,7 @@ export default function Upload(props) {
     }
 
     async function mode_list() {
-        await fetch(server_url("/mode/list"), {
+        await fetch(server_url("/mode/list", server), {
             method: 'GET', // *GET, POST, PUT, DELETE, etc.
             mode: 'cors', // no-cors, *cors, same-origin
             cache: 'reload', // *default, no-cache, reload, force-cache, only-if-cached
