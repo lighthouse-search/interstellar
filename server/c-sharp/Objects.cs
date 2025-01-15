@@ -183,7 +183,7 @@ namespace Interstellar
 
         public class Config_features
         {
-            public string[] file_types { get; set; }
+            public string[] file_types { get; set; } = null;
             public Dictionary<string, string> file_alias { get; set; }
             public Config_features_chunks chunks { get; set; } = new Config_features_chunks();
         }
@@ -273,7 +273,7 @@ namespace Interstellar
         {
             public Config_mode_video_limits_min_max min { get; set; }
             public Config_mode_video_limits_min_max max { get; set; }
-            public Config_mode_video_limits_must_be_and_must_not_be must { get; set; }
+            public Config_mode_video_limits_must_be_and_must_not_be must_be { get; set; }
             public Config_mode_video_limits_must_be_and_must_not_be must_not_be { get; set; }
             public Config_mode_video_limits_includes_and_not_includes includes { get; set; }
             public Config_mode_video_limits_includes_and_not_includes does_not_include { get; set; }
