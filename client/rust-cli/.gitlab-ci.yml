@@ -28,7 +28,7 @@ build_linux:
 
 create_release:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image: $CI_REGISTRY_IMAGE:rust-cli
   script:
     - release-cli create --name "Release $CI_COMMIT_TAG" --tag-name "$CI_COMMIT_TAG" --description "Release description"
     - release-cli upload --tag-name "$CI_COMMIT_TAG" --name "windows-binary" --url "target/x86_64-pc-windows-gnu/release/your_binary.exe"
