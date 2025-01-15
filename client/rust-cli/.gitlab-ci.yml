@@ -5,6 +5,7 @@ stages:
 build_windows:
   stage: build
   script:
+    - cd client/rust-cli
     - cargo build --release --target x86_64-pc-windows-gnu
   artifacts:
     paths:
@@ -13,6 +14,7 @@ build_windows:
 build_macos:
   stage: build
   script:
+    - cd client/rust-cli
     - cargo build --release --target x86_64-apple-darwin
   artifacts:
     paths:
@@ -21,6 +23,7 @@ build_macos:
 build_linux:
   stage: build
   script:
+    - cd client/rust-cli
     - cargo build --release --target x86_64-unknown-linux-gnu
   artifacts:
     paths:
