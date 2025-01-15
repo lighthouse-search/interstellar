@@ -6,6 +6,7 @@ variables:
 
 include:
   - local: client/demo-nextjs/.gitlab-ci.yml
+  - local: client/rust-cli/.gitlab-ci.yml
 
 build:
   image: docker:cli
