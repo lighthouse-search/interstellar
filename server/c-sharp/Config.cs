@@ -18,8 +18,15 @@ namespace Interstellar
     {
         private static void Fallback_to_default_values(object current_mode, object default_mode)
         {
+            if (current_mode == null || default_mode == null)
+                return;
+
             foreach (PropertyInfo property in current_mode.GetType().GetProperties())
             {
+                // TODO: Double check this won't lose configurations.
+                if (!property.CanRead || !property.CanWrite)
+                    break;
+                
                 object current_value = property.GetValue(current_mode);
                 object default_value = property.GetValue(default_mode);
 
@@ -27,7 +34,7 @@ namespace Interstellar
                 {
                     property.SetValue(current_mode, default_value);
                 }
-                else if (property.PropertyType.IsClass && property.PropertyType != typeof(string))
+                else if (property.PropertyType.IsClass && property.PropertyType != typeof(string) && property.PropertyType != typeof(int) && property.PropertyType != typeof(bool))
                 {
                     Fallback_to_default_values(current_value, default_value);
                 }
@@ -97,9 +104,9 @@ namespace Interstellar
 
             // TODO: Double check this works.
             object video_limits_must_be = null;
-            if (config.mode.video_limits.must != null)
+            if (config.mode.video_limits.must_be != null)
             {
-                video_limits_must_be = type == "stream" ? config.mode.video_limits.must.stream : config.mode.video_limits.must.format;
+                video_limits_must_be = type == "stream" ? config.mode.video_limits.must_be.stream : config.mode.video_limits.must_be.format;
             }
             object video_limits_must_not_be = null;
             if (config.mode.video_limits.must_not_be != null)
@@ -194,7 +201,7 @@ namespace Interstellar
                 }, property, item_class(video_limits_max), stream_data);
             }
 
-            if (config.mode.video_limits.must != null && video_limits_must_be != null) {
+            if (config.mode.video_limits.must_be != null && video_limits_must_be != null) {
                 // must_be - Value must be inarray.
                 Validation.compare_value_between_objects_in_a_class((enforced_value, client_value) => {
                     if (enforced_value is List<string> enforced_array && client_value is String client_string)

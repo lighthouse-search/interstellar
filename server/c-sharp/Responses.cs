@@ -8,8 +8,6 @@ namespace Interstellar
     {
         public static object error(string message, object additional = null)
         {
-            Console.WriteLine("additional");
-            Console.WriteLine(additional);
             var errorResponse = new Objects.errorD
             {
                 error = true,

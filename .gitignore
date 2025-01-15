@@ -12,3 +12,4 @@
 /client/demo-nextjs/npm/node_modules
 /client/demo-nextjs/public/assets2
 server/c-sharp/dump.rdb
+/client/rust-cli/target

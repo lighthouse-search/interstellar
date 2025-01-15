@@ -26,8 +26,7 @@
                 "status_update": "http://127.0.0.1:8001/status/update"
             },
             "features": {
-                "file_types": [
-                ],
+                "file_types": null,
                 "file_alias": {
                     "x-matroska": "mkv"
                 },

@@ -15,9 +15,11 @@ RUN useradd -m -s /bin/bash linuxbrew && \
 
 USER root
 RUN npm install next -g
+RUN npm install yarn -g
 USER linuxbrew
 
 RUN npm install
+RUN yarn upgrade
 RUN npm run build
 
 CMD PORT=4000 && npm run start

@@ -34,6 +34,7 @@ namespace Interstellar
 
                     cmd.Start();
 
+                    // TODO: This could be multithreaded by doing e.g. 1-40 chunks, 40-80 chunks, 180-120 chunks and then adding those outputs together to reconstruct this file much faster.
                     await using (StreamWriter sw = cmd.StandardInput)
                     {
                         if (sw.BaseStream.CanWrite)

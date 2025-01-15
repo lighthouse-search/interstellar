@@ -52,7 +52,7 @@ app.Use(async (context, next) =>
     await next();
 });
 app.UseExceptionHandler("/Error");
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseCors();
 app.UseRouting();
 
@@ -153,7 +153,7 @@ try {
         file_type = config.mode.features.file_alias[file_type];
     }
     // Overwrites certain file types, e.g converts filetypes like "x-matroska" to proper file extensions like ".mkv" when defined by the administrator.
-    if (config.mode.features.file_types.Length > 0 && config.mode.features.file_types.Contains(file_type) == false) {
+    if (config.mode.features.file_types != null && config.mode.features.file_types.Contains(file_type) == false) {
         // bad file_type - make response. Use this as a "glad we found that out before we uploaded it and ran it through FFMPEG". THIS IS JUST WHAT THE CLIENT IS CLAIMING THE file_type IS. DO NOT TREAT THIS VIDEO AS ACTUALLY BEING SPECIFIED file_type.
         context.Response.StatusCode = 400;
         // var json = new JObject

@@ -52,17 +52,17 @@ export default function Upload(props) {
         return new Promise(async (resolve, reject) => {
         let binaryValue = file.slice(start, start + chunk_size, file.type);
 
-        let hashData = new TextEncoder().encode(binaryValue);
-        let hashBuffer = await crypto.subtle.digest("SHA-256", hashData);
-        let hashArray = Array.from(new Uint8Array(hashBuffer));
-        let hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+        // let hashData = new TextEncoder().encode(binaryValue);
+        // let hashBuffer = await crypto.subtle.digest("SHA-256", hashData);
+        // let hashArray = Array.from(new Uint8Array(hashBuffer));
+        // let hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
 
         const signed_object = {
             asset_id: id,
             mode: mode,
             file_type: file.type,
             chunk: chunk,
-            video_hash: hashHex
+            // video_hash: hashHex
         }
         await update_queue({ url: server_url("/upload-chunk", server), data: signed_object, chunk });
 
