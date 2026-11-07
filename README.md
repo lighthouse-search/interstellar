@@ -9,6 +9,7 @@ Interstellar ("between stars") is an efficient transfer protocol.
 
 **Interstellar Server implementations**
 - [C#](/server/c-sharp/)
+- [Rust (axum library)](/rust/)
 - More soon!
 
 **Quickstarts**
